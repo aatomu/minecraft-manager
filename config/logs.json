@@ -1,0 +1,100 @@
+[
+  {
+    "comment": "サーバー起動開始",
+    "regexp": [
+      "\\[.+?\\] \\[Server thread/INFO\\]: (Starting minecraft server version .*)"
+    ],
+    "command": "bypass"
+  },
+  {
+    "comment": "サーバー起動",
+    "regexp": [
+      "\\[.+?\\] \\[Server thread/INFO\\]: (Done \\(.+?s\\)! For help, type \"help\")"
+    ],
+    "command": "bypass"
+  },
+  {
+    "comment": "サーバー停止開始",
+    "regexp": [
+      "\\[.+?\\] \\[Server thread/INFO\\]: (Stopping server)"
+    ],
+    "command": "bypass"
+  },
+  {
+    "comment": "サーバー停止",
+    "regexp": [
+      "\\[.+?\\] \\[Server thread/INFO\\]: ThreadedAnvilChunkStorage: (All dimensions are saved)"
+    ],
+    "command": "bypass"
+  },
+  {
+    "comment": "Join",
+    "regexp": [
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.+?) (joined the game)"
+    ],
+    "command": "player"
+  },
+  {
+    "comment": "Left",
+    "regexp": [
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.+?) (left the game)"
+    ],
+    "command": "player"
+  },
+  {
+    "comment": "Advancement",
+    "regexp": [
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.+?) (has made the advancement .*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.+?) (has completed the challenge .*)"
+    ],
+    "command": "player"
+  },
+  {
+    "comment": "Chat",
+    "regexp": [
+      "\\[.+?\\] \\[Server thread/INFO\\]: <(.+?)> (.*)"
+    ],
+    "command": "message"
+  },
+  {
+    "comment": "Death",
+    "regexp": [
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (was.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (fell.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (went.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (walked into .*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (drowned.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (died.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (blew up)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (hit the ground .*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (experienced kinetic energy.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (fell from a high place)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (froze to death)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (discovered the floor was lava)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (suffocated in a wall.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (tried to swim in lava.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (burned to death)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (left the confines of this world.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (didn't want to live in the same world as .*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (starved to death.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (withered away.*)"
+    ],
+    "command": "player"
+  },
+  {
+    "comment": "Other",
+    "regexp": [
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.*default to:.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.*now set to:.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.*server operator.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.*to the whitelist.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.*from the whitelist.*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.*\\[Server\\] .*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.*\\[Rcon\\] .*)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (lost connection: Server closed)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (lost connection: Timed out)",
+      "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (lost connection: You logged in from another location)"
+    ],
+    "command": "bypass"
+  }
+]

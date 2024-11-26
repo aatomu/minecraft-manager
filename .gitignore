@@ -1,0 +1,12 @@
+# config
+config/*
+!config/logs.json
+!config/path_example.env
+!config/server_example.env
+!config/servers_example.json
+# other
+download/*/
+script/ddns.sh
+
+# develop 
+.vscode

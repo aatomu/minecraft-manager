@@ -1,0 +1,24 @@
+{
+	"server": {
+		"SSH": {
+			"User": "atomu",
+			"Port": "22"
+		},
+		"Scripts": {
+			"Backup": "/home/atomu/minecraft-manager/script/server_backup.sh"
+		},
+		"Discord": {
+			"Token": "********",
+			"AdminRole": "0123456789012345678",
+			"WebhookURL": "https://discord.com/api/webhooks/********/********"
+		},
+		"Rcon": {
+			"Port":"25567",
+			"Pass":"0000"
+		},
+		"Backup": {
+			"Arg": "",
+			"Command": ""
+		}
+	}
+}
