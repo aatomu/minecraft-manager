@@ -15,8 +15,8 @@ Docker/Discord を利用した Minecraft Manager
 ./script/download/java.sh <Tag>
 ```
 
-`<Tag>`のところは[eclipse-temurin Tags | Docker Hub](https://hub.docker.com/_/eclipse-temurin/tags)より探してください  
-`docker images`に正しい Tag の`mc_java`があれば成功です
+`<Tag>`のところは[eclipse-temurin Tags | Docker Hub](https://hub.docker.com/_/eclipse-temurin/tags)より探してください \
+`docker images`に正しい Tag の`mc_java`があれば成功です \
 今回は`21-jdk-jammy`(minecraft ver1.21.3 用)を使用して話を進めていきます
 
 > [!NOTE]
@@ -28,8 +28,8 @@ Docker/Discord を利用した Minecraft Manager
 > ./script/download_server.sh rebuild
 > ```
 >
-> `<Version>`のところは minecraft version を書いてください  
-> レート制限に引っかかる場合、`<API Token>`のところに GitHub API Token を書いてください  
+> `<Version>`のところは minecraft version を書いてください \
+> レート制限に引っかかる場合、`<API Token>`のところに GitHub API Token を書いてください \
 > `download/<Version>/`にダウンロードされたバイナリを、サーバーディレクトリにコピーしてください。
 
 > [!WARNING]
@@ -48,7 +48,7 @@ schemaDir=/home/User/servers/schematics
 structDir=/home/User/servers/structures
 ```
 
-上記のようにすべて埋めた`<Server>.env`を`config/`に入れてください  
+上記のようにすべて埋めた`<Server>.env`を`config/`に入れてください \
 (`example.env`を Copy&Modify がおすすめ)
 
 各項目の説明:
@@ -72,16 +72,16 @@ structDir=/home/User/servers/structures
 ./script/boot_server.sh <Server>
 ```
 
-`<Server>`にはサーバー名(config ディレクトリ内の`<Server>.env`)を入れると起動します  
-`docker ps`にあれば、ログは`docker logs -f <Server>_mc`で確認できるはずです  
+`<Server>`にはサーバー名(config ディレクトリ内の`<Server>.env`)を入れると起動します \
+`docker ps`にあれば、ログは`docker logs -f <Server>_mc`で確認できるはずです \
 なければ、`latest.log`を確認します
 
 ### 1-4. ターミナル/Docker から MC 鯖に接続
 
 > [!IMPORTANT]
 >
-> アタッチ(接続)は`docker attach -it <Server>_mc`
-> デアタッチ(切断)は`ctrl+P ctrl+Q`
+> アタッチ(接続)は`docker attach -it <Server>_mc` \
+> デアタッチ(切断)は`ctrl+P ctrl+Q` \
 > 接続した際過去のログは出ないので注意してください。
 
 ## 2. discordBot の準備
@@ -138,8 +138,8 @@ readonly SSH_IDENTITY="${HOME}/.ssh/minecraft-manager"
 readonly CONFIG_DIR="${PWD%/*}/config"
 ```
 
-`DOCKER_SOCK`: docker.d の.sock の場所に
-`SSH_IDENTITY`: minecraft-manager で使用される SSH-key
+`DOCKER_SOCK`: docker.d の.sock の場所に \
+`SSH_IDENTITY`: minecraft-manager で使用される SSH-key \
 `CONFIG_DIR`: `discord-boot.sh`で使用する`servers.json`へのフルパス
 
 > [!TIP]
@@ -156,7 +156,7 @@ readonly CONFIG_DIR="${PWD%/*}/config"
 example="/home/minecraft/servers/example/logs/"
 ```
 
-`serverDir`,`backupDir`はファイル構造に合わせて更新してください  
+`serverDir`,`backupDir`はファイル構造に合わせて更新してください \
 またサーバーごとに行を増やして`<ServerName>`に合う`<LogDir>`を記入してください
 
 ### 2-4. Bot の起動
@@ -165,8 +165,8 @@ example="/home/minecraft/servers/example/logs/"
 ./script/discord-boot.sh <Server>
 ```
 
-`<Server>`にはサーバー名(config ディレクトリ内の`<Server>.env`)を入れると起動します  
-ログは`docker logs -f <Server>_bot`で確認できるはずです  
+`<Server>`にはサーバー名(config ディレクトリ内の`<Server>.env`)を入れると起動します \
+ログは`docker logs -f <Server>_bot`で確認できるはずです \
 DiscordBot には以下の権限が必要です
 
 - Oauth2
@@ -187,5 +187,5 @@ DiscordBot には以下の権限が必要です
 > [!CAUTION]
 >
 > **設定の変更について**
-> docker.file の変更や build を挟むような変更があった際は  
+> docker.file の変更や build を挟むような変更があった際は \
 > 各自 自分で調べて 対応する DockerImage を削除し 再度`./script/***.sh`を実行してください
