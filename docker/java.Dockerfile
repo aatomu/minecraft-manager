@@ -6,8 +6,8 @@ FROM eclipse-temurin:${JAVA} as jdk
 FROM ubuntu
 
 # 引き取り変数
-ARG USERNAME=minecraft
-ARG GROUPNAME=minecraft
+ARG USER_NAME=minecraft
+ARG GROUP_NAME=minecraft
 ARG UID=1000
 ARG GID=1000
 
@@ -27,13 +27,13 @@ RUN mkdir /MC \
   && chmod 777 /MC \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
-      tzdata \
-      locales \
-      language-pack-ja-base language-pack-ja \
+  tzdata \
+  locales \
+  language-pack-ja-base language-pack-ja \
   && apt-get -y clean \
   && rm -rf /var/lib/apt/lists/* \
-  && groupadd --force -g $GID $GROUPNAME \
-  && useradd --non-unique -u $UID -g $GID $USERNAME
+  && groupadd --force -g $GID $GROUP_NAME \
+  && useradd --non-unique -u $UID -g $GID $USER_NAME
 
 
 # 作業ディレクトリを変更

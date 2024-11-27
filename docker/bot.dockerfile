@@ -12,14 +12,14 @@ FROM docker:22.06-rc
 COPY --from=build /chat /usr/bin/
 # TimeZoneの指定
 ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ Asia/Tokyo
-ENV LANG ja_JP.UTF-8
+ENV TZ=Asia/Tokyo
+ENV LANG=ja_JP.UTF-8
 
 # install
 RUN chmod +x /usr/bin/chat \
   && apk add --update-cache --no-cache \
-    tzdata \
-    openssh-client \
+  tzdata \
+  openssh-client \
   && touch identity \
   && mkdir /root/.ssh \
   && chmod 700 /root/.ssh \
