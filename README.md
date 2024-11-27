@@ -19,7 +19,7 @@ Docker/Discord を利用した Minecraft Manager
 `docker images`に正しい Tag の`mc_java`があれば成功です
 今回は`21-jdk-jammy`(minecraft ver1.21.3 用)を使用して話を進めていきます
 
-> [!TIP]
+> [!NOTE]
 >
 > ```bash
 > ./script/download_server.sh <Version> <API Token>
@@ -30,9 +30,11 @@ Docker/Discord を利用した Minecraft Manager
 >
 > `<Version>`のところは minecraft version を書いてください  
 > レート制限に引っかかる場合、`<API Token>`のところに GitHub API Token を書いてください  
-> 今回は`1.18.2`を使用して話を進めていきます  
-> `download/<Version>/`にダウンロードされたバイナリを、サーバーディレクトリにコピーしてください。  
-> `server_1.18.2.jar`は Vanilla なら env, Fabric なら`fabric-server-launcher.properties`で指定されているように`server/server.jar`、`fabric-server_1.18.2.jar`は env に合わせて`fabric.jar`にするといいでしょう
+> `download/<Version>/`にダウンロードされたバイナリを、サーバーディレクトリにコピーしてください。
+
+> [!WARNING]
+>
+> 上記の機能はサポートされていません
 
 ### 1-2. サーバーの設定
 
@@ -40,13 +42,13 @@ Docker/Discord を利用した Minecraft Manager
 Java=21-jdk-jammy
 Jar=server.jar
 JVM="-Xms2G -Xmx2G"
-# subOps="--forceUpgrade --eraseCache" boot_server.shでバージョンアップ時
+# subOps="--forceUpgrade --eraseCache" server_boot.shでバージョンアップ時
 Dir=/home/User/servers/example
 schemaDir=/home/User/servers/schematics
 structDir=/home/User/servers/structures
 ```
 
-上記のようにすべて埋めた`サーバー名.env`を`config/`に入れてください  
+上記のようにすべて埋めた`<Server>.env`を`config/`に入れてください  
 (`example.env`を Copy&Modify がおすすめ)
 
 各項目の説明:
@@ -60,7 +62,11 @@ structDir=/home/User/servers/structures
 |schemaDir|共有する schema ファイルのディレクトリ|
 |structDir|共有する structure ファイルのディレクトリ|
 
-### 2-3. サーバー の起動
+> [!NOTE]
+>
+> `subOps=...`は必要な際にコメントアウトを外してください
+
+### 1-3. サーバー の起動
 
 ```bash
 ./script/boot_server.sh <Server>
@@ -69,13 +75,14 @@ structDir=/home/User/servers/structures
 `<Server>`にはサーバー名(config ディレクトリ内の`<Server>.env`)を入れると起動します  
 `docker ps`にあれば、ログは`docker logs -f <Server>_mc`で確認できるはずです  
 なければ、`latest.log`を確認します
-確認出来たら 任意の方法(MC 内からのコマンド,Docker attach)で MC を落としてください
 
-### 2-4. ターミナル/Docker から MC 鯖に接続
+### 1-4. ターミナル/Docker から MC 鯖に接続
 
-アタッチ(接続)は`docker attach -it <Server>_mc`
-デアタッチ(切断)は`ctrl+P ctrl+Q`
-です 接続した際過去のログは出ないので注意してください。
+> [!IMPORTANT]
+>
+> アタッチ(接続)は`docker attach -it <Server>_mc`
+> デアタッチ(切断)は`ctrl+P ctrl+Q`
+> 接続した際過去のログは出ないので注意してください。
 
 ## 2. discordBot の準備
 
@@ -135,6 +142,10 @@ readonly CONFIG_DIR="${PWD%/*}/config"
 `SSH_IDENTITY`: minecraft-manager で使用される SSH-key
 `CONFIG_DIR`: `discord-boot.sh`で使用する`servers.json`へのフルパス
 
+> [!TIP]
+>
+> 基本はデフォルトで問題ありません。
+
 ### 2-3. path.env の設定
 
 ※ `path_example.env`を`path.env`にリネームして使用してください
@@ -173,6 +184,8 @@ DiscordBot には以下の権限が必要です
 招待リンク `https://discord.com/api/oauth2/authorize?client_id=<Your Bot Client ID>&permissions=536988672&scope=bot%20applications.commands`
 以上で Bot 編は終わりです。
 
-> [!CAUTION] > **設定の変更について** \
+> [!CAUTION]
+>
+> **設定の変更について**
 > docker.file の変更や build を挟むような変更があった際は  
 > 各自 自分で調べて 対応する DockerImage を削除し 再度`./script/***.sh`を実行してください
