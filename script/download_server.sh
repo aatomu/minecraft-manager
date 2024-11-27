@@ -9,15 +9,13 @@ readonly USER_ID=$(id -u)
 readonly GROUP_ID=$(id -g)
 
 # Image削除
-if [ "${VERSION}" == "" ]
- then
+if [ "${VERSION}" == "" ]; then
   echo "[INFO] Docker Image : Delete Image"
   docker rmi mc_downloader:latest
 fi
 
 # 新規ビルド
-if [ "$(docker images | grep "mc_downloader")" == "" ]
- then
+if [ "$(docker images | grep "mc_downloader")" == "" ]; then
   echo "[INFO] Docker Image Build : mc_downloader"
   docker build --no-cache -f ../docker/downloader.Dockerfile -t mc_downloader:latest ../
 

@@ -1,7 +1,5 @@
 #! /bin/bash
 cd $(dirname "$0")
-readonly SCRIPTPATH="${PWD}"
-
 # ${1} SERVER_DIR
 # ${2} BACKUP_DIR
 # ${3} TARGET_TIMESTAMP
@@ -25,15 +23,15 @@ readonly ERROR=1
 
 # Arg check
 if [ "${TARGET_TIMESTAMP}" == "" ]; then
-  echo "[ERROR]: Ivaild timestamp value: \"${TARGET_TIMESTAMP}\""
+  echo "[ERROR]: Invalid timestamp value: \"${TARGET_TIMESTAMP}\""
   exit ${ERROR}
 fi
 if [ ! -d "${RSYNC_SOURCE}" ]; then
   echo "[ERROR]: This timestamp not found: \"${TARGET_TIMESTAMP}\""
-  echo "[ERROR]: Backuped timestamp list"
+  echo "[ERROR]: Backed up timestamp list...."
   cd ${BACKUP_DIR}
   ls -d */
-  curl -X POST -H 'Content-Type:application/json' -d "{\"embeds\":[{\"author\":{\"name\":\"Backup timestamp:\\\"${TARGET_TIMESTAMP}\\\" not found\"},\"description\":\"**Backuped timestamps**\n$(ls -d */)\",\"color\":\"${FAILED_COLOR}\"}]}" "${WEBHOOK_URL}"
+  curl -X POST -H 'Content-Type:application/json' -d "{\"embeds\":[{\"author\":{\"name\":\"Backup timestamp:\\\"${TARGET_TIMESTAMP}\\\" not found\"},\"description\":\"**Backed up timestamps**\n$(ls -d */)\",\"color\":\"${FAILED_COLOR}\"}]}" "${WEBHOOK_URL}"
   exit ${ERROR}
 fi
 
