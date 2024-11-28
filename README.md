@@ -39,13 +39,14 @@ Docker/Discord を利用した Minecraft Manager
 ### 1-2. サーバーの設定
 
 ```env
-Java=21-jdk-jammy
-Jar=server.jar
-JVM="-Xms2G -Xmx2G"
-# subOps="--forceUpgrade --eraseCache" server_boot.shでバージョンアップ時
-Dir=/home/User/servers/example
-schemaDir=/home/User/servers/schematics
-structDir=/home/User/servers/structures
+java=21-jdk-jammy
+jvm_arg="-Xms2G -Xmx2G"
+server_jar=server.jar
+#server_arg="--forceUpgrade --eraseCache"
+server_dir=/home/atomu/servers/example_1.21.3
+backup_dir=/home/atomu/backup/example_1.21.3
+structure_dir=/home/atomu/servers/structures
+schematic_dir=/home/atomu/servers/schematics
 ```
 
 上記のようにすべて埋めた`<Server>.env`を`config/`に入れてください \
@@ -54,13 +55,14 @@ structDir=/home/User/servers/structures
 各項目の説明:
 |Key|Value|
 | :-:|:-:|
-|Java|Image 作成のときに使用した TAG|
-|Jar|server.jar の名前を記入|
-|JVM|java の引数|
-|subOps|.jar の引数|
-|Dir|サーバーディレクトリ|
-|schemaDir|共有する schema ファイルのディレクトリ|
-|structDir|共有する structure ファイルのディレクトリ|
+|java|Image 作成のときに使用した TAG|
+|jvm_arg|java の引数|
+|server_jar|server.jar の名前を記入|
+|server_arg|server.jar の引数|
+|server_dir|サーバーディレクトリ|
+|backup_dir|サーバーディレクトリのバックアップ先|
+|structure_dir|共有する structure ファイルのディレクトリ|
+|schematic_dir|共有する schema ファイルのディレクトリ|
 
 > [!NOTE]
 >

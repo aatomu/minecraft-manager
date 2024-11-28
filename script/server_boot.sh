@@ -11,26 +11,30 @@ if [ ! -e "../config/${SERVER_NAME}.env" ]; then
   exit 1
 fi
 
+# 変数読み込み
+source ../config/${SERVER_NAME}.env
+
 # 実行分岐
 if [ "$(docker ps -a | grep "${SERVER_NAME}_mc")" == "" ]; then
   # 起動
-  source ../config/${SERVER_NAME}.env
-  echo "Java       : mc_java:${Java}"
-  echo "Server     : ${SERVER_NAME}"
-  echo "DataDir    : ${Dir}"
-  echo "schemaDir  : ${schemaDir}"
-  echo "structDir  : ${structDir}"
-  echo "Boot       : ${JVM} ${Jar} ${subOps}"
-  Ops="-id --rm --name=${SERVER_NAME}_mc --network=host -v ${Dir}:/MC -v ${schemaDir}:/schematics -v ${structDir}:/structures"
+  echo "Java               : mc_java:${java}"
+  echo "Server             : ${SERVER_NAME}"
+  echo "Server Directory   : ${server_dir}"
+  echo "Structure Directory: ${structure_dir}"
+  echo "Schematic Directory: ${schematic_dir}"
+  echo "Boot Java Command  : ${jvm_arg} ${server_jar} ${server_arg}"
+  readonly DOCKER_ARGUMENTS="-id --rm --name=${SERVER_NAME}_mc --network=host -v ${server_dir}:/MC -v ${structure_dir}:/structures -v ${schematic_dir}:/schematics"
+
   # Java Image Check
-  if [ "$(docker images mc_java:${Java})" == "" ]; then
-    echo "[Error] Docker Image Has Not Found: \"mc_java:${Java}\""
+  if [ "$(docker images mc_java:${java})" == "" ]; then
+    echo "[Error] Docker Image Has Not Found: \"mc_java:${java}\""
     exit 0
   fi
 
   echo "[INFO] Server Starting"
-  echo "docker run ${Ops} mc_java:${Java} ${Jar}"
-  docker run ${Ops} mc_java:${Java} ${JVM} -jar ${Jar} ${subOps}
+  readonly DOCKER_COMMAND="docker run ${DOCKER_COMMAND} mc_java:${java} ${jvm_arg} -jar ${Jar} ${server_arg}"
+  echo "${DOCKER_COMMAND}"
+  ${DOCKER_COMMAND}
 else
   echo "[ERROR] Server Is Booted!"
 fi
