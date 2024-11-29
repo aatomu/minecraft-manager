@@ -39,14 +39,15 @@ Docker/Discord を利用した Minecraft Manager
 ### 1-2. サーバーの設定
 
 ```env
+#! Java/Server Arguments
 java=21-jdk-jammy
 jvm_arg="-Xms2G -Xmx2G"
 server_jar=server.jar
 #server_arg="--forceUpgrade --eraseCache"
+#! Directory Configuration
 server_dir=/home/atomu/servers/example_1.21.3
 backup_dir=/home/atomu/backup/example_1.21.3
-structure_dir=/home/atomu/servers/structures
-schematic_dir=/home/atomu/servers/schematics
+custom_dir=/home/atomu/custom
 ```
 
 上記のようにすべて埋めた`<Server>.env`を`config/`に入れてください \
@@ -61,8 +62,7 @@ schematic_dir=/home/atomu/servers/schematics
 |server_arg|server.jar の引数|
 |server_dir|サーバーディレクトリ|
 |backup_dir|サーバーディレクトリのバックアップ先|
-|structure_dir|共有する structure ファイルのディレクトリ|
-|schematic_dir|共有する schema ファイルのディレクトリ|
+|custom_dir|特殊マウントディレクトリ|
 
 > [!NOTE]
 >

@@ -20,10 +20,9 @@ if [ "$(docker ps -a | grep "${SERVER_NAME}_mc")" == "" ]; then
   echo "Java               : mc_java:${java}"
   echo "Server             : ${SERVER_NAME}"
   echo "Server Directory   : ${server_dir}"
-  echo "Structure Directory: ${structure_dir}"
-  echo "Schematic Directory: ${schematic_dir}"
+  echo "Custom Directory: ${custom_dir}"
   echo "Boot Java Command  : ${jvm_arg} ${server_jar} ${server_arg}"
-  readonly DOCKER_ARGUMENTS="-id --rm --name=${SERVER_NAME}_mc --network=host -v ${server_dir}:/MC -v ${structure_dir}:/structures -v ${schematic_dir}:/schematics"
+  readonly DOCKER_ARGUMENTS="-id --rm --name=${SERVER_NAME}_mc --network=host -v ${server_dir}:/MC -v ${custom_dir}:/custom"
 
   # Java Image Check
   if [ "$(docker images mc_java:${java})" == "" ]; then
