@@ -39,15 +39,34 @@ Docker/Discord を利用した Minecraft Manager
 ### 1-2. サーバーの設定
 
 ```env
-#! Java/Server Arguments
+#! Java Arguments
 java=21-jdk-jammy
 jvm_arg="-Xms2G -Xmx2G"
+#! Server Arguments
 server_jar=server.jar
 #server_arg="--forceUpgrade --eraseCache"
-#! Directory Configuration
+#! Directory Config
 server_dir=/home/atomu/servers/example_1.21.3
 backup_dir=/home/atomu/backup/example_1.21.3
 custom_dir=/home/atomu/custom
+
+#! SSH Config
+ssh_user=""
+ssh_port=""
+#! Server Operation Script
+script_boot=""
+script_backup=""
+script_backup_rsync_arg=""
+script_backup_rsync_command=""
+script_restore=""
+#! Discord Bot Config
+discord_bot_token=""
+discord_admin_role=""
+discord_webhook_url=""
+#! Rcon/Console Config
+rcon_port=""
+rcon_password=""
+
 ```
 
 上記のようにすべて埋めた`<Server>.env`を`config/`に入れてください \
@@ -63,6 +82,18 @@ custom_dir=/home/atomu/custom
 |server_dir|サーバーディレクトリ|
 |backup_dir|サーバーディレクトリのバックアップ先|
 |custom_dir|特殊マウントディレクトリ|
+|ssh_user|docker を実行している User|
+|ssh_port|docker を実行してる User へのアクセス Port|
+|script_boot|server を起動するスクリプトへのフルパス|
+|script_backup|server をバックアップするスクリプトへのフルパス|
+|script_backup_rsync_arg|server をバックアップするスクリプトへ引数|
+|script_backup_rsync_command|server をバックアップするスクリプトへ引数|
+|script_restore|server のデータ復旧するスクリプトへ引数|
+|discord_bot_token|discord Bot の Token|
+|discord_admin_role|discord からコマンドを実行できるロール ID|
+|discord_webhook_url|discord へメッセージを送る Webhook URL|
+|rcon_port|minecraft server への Rcon アクセスポート|
+|rcon_password|minecraft server への Rcon アクセスパスワード|
 
 > [!NOTE]
 >
@@ -88,51 +119,7 @@ custom_dir=/home/atomu/custom
 
 ## 2. discordBot の準備
 
-### 2-1. servers.json の設定
-
-※ `servers_example.json`を`servers.json`にリネームして使用してください
-
-```json
-{
-  "<Server1>": {
-    "SSH": {
-      "User": "",
-      "Port": ""
-    },
-    "Scripts": {
-      "Boot": "",
-      "Backup": ""
-    },
-    "Discord": {
-      "Token": "",
-      "AdminRole": "",
-      "WebhookURL": ""
-    },
-    "Rcon": {
-      "Port": "",
-      "Pass": ""
-    }
-  }
-}
-```
-
-各種設定項目:
-
-- SSH(no Required)
-  - User: SSH User Name
-  - Port: SSH Port Number
-- Scripts(no Required)
-  - Boot: Server Boot Script Path(Full Path)
-  - Backup: Server Backup Script Path(Full Path)
-- Discord(Required)
-  - Token: Discord Bot Token
-  - AdminRole: Role Can Execute Server Control Commands
-  - WebhookURL: Transfer Server <=> Discord Message
-- Rcon(Required)
-  - Port: Rcon Connect Port
-  - Pass: Rcon Login Password
-
-### 2-2. discord-boot.sh の設定
+### 2-1. discord-boot.sh の設定
 
 ```bash
 readonly DOCKER_SOCK="/var/run/docker.sock"
@@ -148,20 +135,7 @@ readonly CONFIG_DIR="${PWD%/*}/config"
 >
 > 基本はデフォルトで問題ありません。
 
-### 2-3. path.env の設定
-
-※ `path_example.env`を`path.env`にリネームして使用してください
-
-```bash
-# log file
-<ServerName>="<LogDir>"
-example="/home/minecraft/servers/example/logs/"
-```
-
-`serverDir`,`backupDir`はファイル構造に合わせて更新してください \
-またサーバーごとに行を増やして`<ServerName>`に合う`<LogDir>`を記入してください
-
-### 2-4. Bot の起動
+### 2-3. Bot の起動
 
 ```bash
 ./script/discord-boot.sh <Server>
