@@ -18,46 +18,32 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type ServerSetting struct {
-	SSH struct {
-		User string `json:"User"`
-		Port string `json:"Port"`
-	} `json:"SSH"`
-	Scripts struct {
-		Boot    string `json:"Boot"`
-		Backup  string `json:"Backup"`
-		Restore string `json:"Restore"`
-	} `json:"Scripts"`
-	Discord struct {
-		Token      string `json:"Token"`
-		AdminRole  string `json:"AdminRole"`
-		WebhookURL string `json:"WebhookURL"`
-	} `json:"Discord"`
-	Rcon struct {
-		Port string `json:"Port"`
-		Pass string `json:"Pass"`
-	} `json:"Rcon"`
-	Backup struct {
-		Arg     string `json:"Arg"`
-		Command string `json:"Command"`
-	}
-}
-
 type LogConfig struct {
 	Regexp  []string `json:"regexp"`
 	Command string   `json:"command"`
 }
 
 var (
-	Servers    map[string]ServerSetting
-	Server     ServerSetting
+	ServerDir                = os.Getenv("server_dir")
+	BackupDir                = os.Getenv("backup_dir")
+	SshUser                  = os.Getenv("ssh_user")
+	SshPort                  = os.Getenv("ssh_port")
+	ScriptBoot               = os.Getenv("script_boot")
+	ScriptBackup             = os.Getenv("script_backup")
+	ScriptBackupRsyncArg     = os.Getenv("script_backup_rsync_arg")
+	ScriptBackupRsyncCommand = os.Getenv("script_backup_rsync_command")
+	ScriptRestore            = os.Getenv("script_restore")
+	DiscordBotToken          = os.Getenv("discord_bot_token")
+	DiscordAdminRole         = os.Getenv("discord_admin_role")
+	DiscordWebhookUrl        = os.Getenv("discord_webhook_url")
+	RconPort                 = os.Getenv("rcon_port")
+	RconPassword             = os.Getenv("rcon_password")
+
 	Log        []LogConfig
 	ChannelID  = ""
-	ServerName = flag.String("name", "", "Monitoring Server Name")                          //! Required
-	ServerDir  = flag.String("server-dir", "", "Monitoring/Backup-Source Server Directory") //! Required
-	BackupDir  = flag.String("backup-dir", "", "Backup-Dest Directory")                     //! Required
-	LogDir     = flag.String("log-dir", "/logs", "Minecraft latest.log Directory")          //* Not Required
-	ConfigDir  = flag.String("config-dir", "/config", "Config Directory")                   //* Not Required
+	ServerName = flag.String("name", "", "Monitoring Server Name")                 //! Required
+	LogDir     = flag.String("log-dir", "/logs", "Minecraft latest.log Directory") //* Not Required
+	ConfigDir  = flag.String("config-dir", "/config", "Config Directory")          //* Not Required
 )
 
 func main() {
@@ -66,38 +52,23 @@ func main() {
 	if *ServerName == "" {
 		panic("Required \"-name\" flag")
 	}
-	if *ServerDir == "" {
-		panic("Required \"-name\" flag")
-	}
-	if *BackupDir == "" {
-		panic("Required \"-name\" flag")
-	}
 
-	// Read config
-	b, _ := os.ReadFile(filepath.Join(*ConfigDir, "servers.json"))
-	json.Unmarshal(b, &Servers)
-
-	if _, ok := Servers[*ServerName]; !ok {
-		panic("unknown server")
-	}
-	Server = Servers[*ServerName]
-
-	b, _ = os.ReadFile(filepath.Join(*ConfigDir, "logs.json"))
+	b, _ := os.ReadFile(filepath.Join(*ConfigDir, "logs.json"))
 	json.Unmarshal(b, &Log)
 	if len(Log) == 0 {
 		panic("log transfer config not found")
 	}
 
 	fmt.Println("Target Server    :", *ServerName)
-	fmt.Println("Server Directory :", *ServerDir)
-	fmt.Println("Backup Directory :", *BackupDir)
-	fmt.Println("Webhook URL      :", Server.Discord.WebhookURL)
+	fmt.Println("Server Directory :", ServerDir)
+	fmt.Println("Backup Directory :", BackupDir)
+	fmt.Println("Webhook URL      :", DiscordWebhookUrl)
 
 	// 呼び出し
 	go LogReader()
 	//--------------Bot本体--------------
 	//bot起動準備
-	discord, err := discordgo.New("Bot " + Server.Discord.Token)
+	discord, err := discordgo.New("Bot " + DiscordBotToken)
 	if err != nil {
 		panic(err)
 	}
@@ -132,7 +103,7 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 	//起動メッセージ
 	log.Printf("\"%s\" server bot is ready.", *ServerName)
 
-	URL, _ := url.Parse(Server.Discord.WebhookURL)
+	URL, _ := url.Parse(DiscordWebhookUrl)
 	webhook, err := discord.Webhook(strings.Split(URL.Path, "/")[3])
 	if err != nil {
 		panic(err)
@@ -196,7 +167,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		if strings.HasPrefix(text, "\\") { // "\"から始まる
-			ok, _ := disgord.HaveRole(discord, m.GuildID, m.Author.ID, Server.Discord.AdminRole)
+			ok, _ := disgord.HaveRole(discord, m.GuildID, m.Author.ID, DiscordAdminRole)
 			if ok { // 権限を持ってる
 				text = strings.Replace(text, "\\", "", 1)
 				sendCmd(text)
@@ -231,7 +202,7 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 	}
 
 	// 権限確認
-	ok, err := disgord.HaveRole(discord, iData.GuildID, iData.User.ID, Server.Discord.AdminRole)
+	ok, err := disgord.HaveRole(discord, iData.GuildID, iData.User.ID, DiscordAdminRole)
 	if !ok || err != nil {
 		return
 	}
@@ -288,7 +259,7 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 
 func SendWebhook(m discordgo.WebhookParams) {
 	b, _ := json.Marshal(m)
-	req, _ := http.NewRequest(http.MethodPost, Server.Discord.WebhookURL, bytes.NewBuffer(b))
+	req, _ := http.NewRequest(http.MethodPost, DiscordWebhookUrl, bytes.NewBuffer(b))
 	req.Header.Set("Content-Type", "application/json")
 	client := new(http.Client)
 	// Request送信

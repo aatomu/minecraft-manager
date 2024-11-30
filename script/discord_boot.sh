@@ -33,8 +33,7 @@ source ../config/${SERVER_NAME}.env
 # Container check
 if [ "$(docker ps -a -q --filter name=^${SERVER_NAME}_chat | wc -l)" == "0" ]; then
   echo "[INFO]: Docker \"${SERVER_NAME}_chat\" container start"
-  source ../config/path.env
-  docker run -itd --name ${SERVER_NAME}_chat -v ${SSH_IDENTITY}:/identity -v ${CONFIG_DIR}:/config -v ${server_dir}/logs:/logs -v ${DOCKER_SOCK}:/var/run/docker.sock --network=host mc_chat:latest --name="${SERVER_NAME}" --server-dir="${server_dir}" --backup-dir="${backup_dir}"
+  docker run -itd --name ${SERVER_NAME}_chat -v ${SSH_IDENTITY}:/identity -v ${CONFIG_DIR}:/config -v ${server_dir}/logs:/logs -v ${DOCKER_SOCK}:/var/run/docker.sock --env-file="${CONFIG_DIR}/${SERVER_NAME}.env" --network=host mc_chat:latest --name="${SERVER_NAME}" 
 else
   echo "[INFO]: Docker \"${SERVER_NAME}_chat\" container stop"
   docker stop ${SERVER_NAME}_chat

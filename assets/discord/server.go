@@ -122,7 +122,7 @@ func tailLog(text chan<- string) {
 }
 
 func serverStart() {
-	b, err := sshCommand(fmt.Sprintf("%s %s", Server.Scripts.Boot, *ServerName)).CombinedOutput()
+	b, err := sshCommand(fmt.Sprintf("%s %s", ScriptBoot, *ServerName)).CombinedOutput()
 	if err != nil {
 		PrintLog(OutputError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
 	}
@@ -136,14 +136,14 @@ func serverStop() {
 }
 
 func serverBackup() {
-	b, err := sshCommand(fmt.Sprintf("%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"", Server.Scripts.Backup, *ServerDir, *BackupDir, Server.Backup.Arg, Server.Backup.Command, Server.Discord.WebhookURL)).CombinedOutput()
+	b, err := sshCommand(fmt.Sprintf("%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"", ScriptBackup, ServerDir, BackupDir, ScriptBackupRsyncArg, ScriptBackupRsyncCommand, DiscordWebhookUrl)).CombinedOutput()
 	if err != nil {
 		PrintLog(OutputError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
 	}
 }
 
 func serverRestore(timestamp string) {
-	b, err := sshCommand(fmt.Sprintf("%s \"%s\" \"%s\" \"%s\" \"%s\"", Server.Scripts.Restore, *ServerDir, *BackupDir, timestamp, Server.Discord.WebhookURL)).CombinedOutput()
+	b, err := sshCommand(fmt.Sprintf("%s \"%s\" \"%s\" \"%s\" \"%s\"", ScriptRestore, ServerDir, BackupDir, timestamp, DiscordWebhookUrl)).CombinedOutput()
 	if err != nil {
 		PrintLog(OutputError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
 	}
@@ -160,7 +160,7 @@ func sendCmd(command string) {
 	if !IsServerBooted() {
 		return
 	}
-	rcon, err := rcon.Login(fmt.Sprintf("localhost:%s", Server.Rcon.Port), Server.Rcon.Pass)
+	rcon, err := rcon.Login(fmt.Sprintf("localhost:%s", RconPort), RconPassword)
 	if err != nil {
 		PrintLog(MinecraftError, err.Error())
 		return
@@ -181,7 +181,7 @@ func getCommand(cmd string) (command *exec.Cmd) {
 }
 
 func sshCommand(cmd string) (command *exec.Cmd) {
-	cmd = fmt.Sprintf("ssh -v -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p %s -i /identity %s@localhost %s", Server.SSH.Port, Server.SSH.User, cmd)
+	cmd = fmt.Sprintf("ssh -v -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p %s -i /identity %s@localhost %s", SshPort, SshUser, cmd)
 	return getCommand(cmd)
 }
 
