@@ -31,7 +31,7 @@ if [ "$(docker ps -a | grep "${SERVER_NAME}_mc")" == "" ]; then
   fi
 
   echo "[INFO] Server Starting"
-  readonly DOCKER_COMMAND="docker run ${DOCKER_COMMAND} mc_java:${java} ${jvm_arg} -jar ${Jar} ${server_arg}"
+  readonly DOCKER_COMMAND="docker run ${DOCKER_ARGUMENTS} mc_java:${java} ${jvm_arg} -jar ${server_jar} ${server_arg}"
   echo "${DOCKER_COMMAND}"
   ${DOCKER_COMMAND}
 else
