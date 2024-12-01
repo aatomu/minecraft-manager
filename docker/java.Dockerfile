@@ -1,6 +1,6 @@
 # javaを指定
-ARG JAVA
-FROM eclipse-temurin:${JAVA} as jdk
+ARG JAVA=21
+FROM eclipse-temurin:${JAVA} AS jdk
 
 # ubuntuに設定
 FROM ubuntu
