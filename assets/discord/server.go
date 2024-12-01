@@ -136,10 +136,13 @@ func serverStop() {
 }
 
 func serverBackup() {
+	sendCmd("save-off")
+	sendCmd("save-all flush")
 	b, err := sshCommand(fmt.Sprintf("%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"", ScriptBackup, ServerDir, BackupDir, ScriptBackupRsyncArg, ScriptBackupRsyncCommand, DiscordWebhookUrl)).CombinedOutput()
 	if err != nil {
 		PrintLog(OutputError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
 	}
+	sendCmd("save-on")
 }
 
 func serverRestore(timestamp string) {
