@@ -202,7 +202,7 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 	}
 
 	// 権限確認
-	ok, err := disgord.HaveRole(discord, iData.GuildID, iData.User.ID, DiscordAdminRole)
+	ok, err := disgord.HaveRole(discord, iData.GuildID, i.User.ID, DiscordAdminRole)
 	if !ok || err != nil {
 		return
 	}
