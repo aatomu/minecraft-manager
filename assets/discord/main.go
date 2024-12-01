@@ -59,10 +59,11 @@ func main() {
 		panic("log transfer config not found")
 	}
 
-	fmt.Println("Target Server    :", *ServerName)
-	fmt.Println("Server Directory :", ServerDir)
-	fmt.Println("Backup Directory :", BackupDir)
-	fmt.Println("Webhook URL      :", DiscordWebhookUrl)
+	fmt.Println("Target Server       :", *ServerName)
+	fmt.Println("Server Directory    :", ServerDir)
+	fmt.Println("Backup Directory    :", BackupDir)
+	fmt.Println("Discord Bot Token   :", DiscordBotToken)
+	fmt.Println("Discord Webhook URL :", DiscordWebhookUrl)
 
 	// 呼び出し
 	go LogReader()
