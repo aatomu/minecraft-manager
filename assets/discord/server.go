@@ -154,7 +154,7 @@ func serverRestore(timestamp string) {
 
 // 鯖確認
 func IsServerBooted() (isBooted bool) {
-	out, err := getCommand(fmt.Sprintf("docker ps -a -q --filter name=^%s_mc", *ServerName)).CombinedOutput()
+	out, err := sshCommand(fmt.Sprintf("docker ps -a -q --filter name=^%s_mc", *ServerName)).CombinedOutput()
 	if err != nil {
 		return true
 	}

@@ -5,7 +5,6 @@ readonly SCRIPT_PATH="${PWD}"
 # Arg
 readonly SERVER_NAME="${1}"
 # Const
-readonly DOCKER_SOCK="/var/run/docker.sock"
 readonly SSH_IDENTITY="${HOME}/.ssh/minecraft-manager"
 readonly CONFIG_DIR="$(cd ${SCRIPT_PATH}/../config ; echo ${PWD})"
 
@@ -33,7 +32,7 @@ source ../config/${SERVER_NAME}.env
 # Container check
 if [ "$(docker ps -a -q --filter name=^${SERVER_NAME}_chat | wc -l)" == "0" ]; then
   echo "[INFO]: Docker \"${SERVER_NAME}_chat\" container start"
-  docker run -itd --name ${SERVER_NAME}_chat -v ${SSH_IDENTITY}:/identity -v ${CONFIG_DIR}:/config -v ${server_dir}/logs:/logs -v ${DOCKER_SOCK}:/var/run/docker.sock --env-file="${CONFIG_DIR}/${SERVER_NAME}.env" --network=host mc_chat:latest --name="${SERVER_NAME}" 
+  docker run -itd --name ${SERVER_NAME}_chat -v ${SSH_IDENTITY}:/identity -v ${CONFIG_DIR}:/config -v ${server_dir}/logs:/logs --env-file="${CONFIG_DIR}/${SERVER_NAME}.env" --network=host mc_chat:latest --name="${SERVER_NAME}" 
 else
   echo "[INFO]: Docker \"${SERVER_NAME}_chat\" container stop"
   docker stop ${SERVER_NAME}_chat
