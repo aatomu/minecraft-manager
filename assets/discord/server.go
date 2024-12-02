@@ -124,6 +124,15 @@ func tailLog(text chan<- string) {
 func serverStart() {
 	b, err := sshCommand(fmt.Sprintf("%s %s", ScriptBoot, *ServerName)).CombinedOutput()
 	if err != nil {
+		SendWebhook(discordgo.WebhookParams{
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       CommandError,
+					Title:       "Server boot script execution failed",
+					Description: "Please check log",
+				},
+			},
+		})
 		PrintLog(OutputError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
 	}
 }
@@ -140,6 +149,15 @@ func serverBackup() {
 	sendCmd("save-all flush")
 	b, err := sshCommand(fmt.Sprintf("%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"", ScriptBackup, ServerDir, BackupDir, ScriptBackupRsyncArg, ScriptBackupRsyncCommand, DiscordWebhookUrl)).CombinedOutput()
 	if err != nil {
+		SendWebhook(discordgo.WebhookParams{
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       CommandError,
+					Title:       "Server backup script execution failed",
+					Description: "Please check log",
+				},
+			},
+		})
 		PrintLog(OutputError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
 	}
 	sendCmd("save-on")
@@ -148,6 +166,15 @@ func serverBackup() {
 func serverRestore(timestamp string) {
 	b, err := sshCommand(fmt.Sprintf("%s \"%s\" \"%s\" \"%s\" \"%s\"", ScriptRestore, ServerDir, BackupDir, timestamp, DiscordWebhookUrl)).CombinedOutput()
 	if err != nil {
+		SendWebhook(discordgo.WebhookParams{
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       CommandError,
+					Title:       "Server restore script execution failed",
+					Description: "Please check log",
+				},
+			},
+		})
 		PrintLog(OutputError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
 	}
 }
