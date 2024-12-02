@@ -20,7 +20,8 @@ import (
 
 type LogConfig struct {
 	Regexp  []string `json:"regexp"`
-	Command string   `json:"command"`
+	Action  string   `json:"action"`
+	Command string   `json:"command,omitempty"`
 }
 
 const (

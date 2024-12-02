@@ -4,42 +4,46 @@
     "regexp": [
       "\\[.+?\\] \\[Server thread/INFO\\]: (Starting minecraft server version .*)"
     ],
-    "command": "bypass"
+    "action": "bypass",
+    "command": "server_starting"
   },
   {
     "comment": "サーバー起動",
     "regexp": [
       "\\[.+?\\] \\[Server thread/INFO\\]: (Done \\(.+?s\\)! For help, type \"help\")"
     ],
-    "command": "bypass"
+    "action": "bypass",
+    "command": "server_started"
   },
   {
     "comment": "サーバー停止開始",
     "regexp": [
       "\\[.+?\\] \\[Server thread/INFO\\]: (Stopping server)"
     ],
-    "command": "bypass"
+    "action": "bypass",
+    "command": "server_stopping"
   },
   {
-    "comment": "サーバー停止",
+    "comment": "サーバー停止/ワールド保存",
     "regexp": [
       "\\[.+?\\] \\[Server thread/INFO\\]: ThreadedAnvilChunkStorage: (All dimensions are saved)"
     ],
-    "command": "bypass"
+    "action": "bypass",
+    "command": "server_stopped"
   },
   {
     "comment": "Join",
     "regexp": [
       "\\[.+?\\] \\[Server thread/INFO\\]: (.+?) (joined the game)"
     ],
-    "command": "player"
+    "action": "player"
   },
   {
     "comment": "Left",
     "regexp": [
       "\\[.+?\\] \\[Server thread/INFO\\]: (.+?) (left the game)"
     ],
-    "command": "player"
+    "action": "player"
   },
   {
     "comment": "Advancement",
@@ -47,14 +51,14 @@
       "\\[.+?\\] \\[Server thread/INFO\\]: (.+?) (has made the advancement .*)",
       "\\[.+?\\] \\[Server thread/INFO\\]: (.+?) (has completed the challenge .*)"
     ],
-    "command": "player"
+    "action": "player"
   },
   {
     "comment": "Chat",
     "regexp": [
       "\\[.+?\\] \\[Server thread/INFO\\]: <(.+?)> (.*)"
     ],
-    "command": "message"
+    "action": "message"
   },
   {
     "comment": "Death",
@@ -79,7 +83,7 @@
       "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (starved to death.*)",
       "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (withered away.*)"
     ],
-    "command": "player"
+    "action": "player"
   },
   {
     "comment": "Other",
@@ -95,6 +99,6 @@
       "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (lost connection: Timed out)",
       "\\[.+?\\] \\[Server thread/INFO\\]: (.{3,20}) (lost connection: You logged in from another location)"
     ],
-    "command": "bypass"
+    "action": "bypass"
   }
 ]
