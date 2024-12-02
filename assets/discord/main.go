@@ -196,7 +196,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		for _, word := range strings.Split(text, "") {
 			unicode = unicode + fmt.Sprintf("\\u%04x", []rune(word)[0])
 		}
-		command := fmt.Sprintf(`tellraw @a {"text":"(%s) %s"}`, m.Author.Username, unicode)
+		command := fmt.Sprintf(`execute if entity @a run tellraw @a {"text":"(%s) %s"}`, m.Author.Username, unicode)
 		//送信
 		sendCmd(command)
 	}
