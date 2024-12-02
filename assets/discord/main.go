@@ -68,34 +68,37 @@ func main() {
 	// 呼び出し
 	go LogReader()
 	//--------------Bot本体--------------
-	//bot起動準備
-	discord, err := discordgo.New("Bot " + DiscordBotToken)
-	if err != nil {
-		panic(err)
-	}
-
-	//eventトリガー設定
-	discord.AddHandler(onReady)
-	discord.AddHandler(onMessageCreate)
-	discord.AddHandler(onInteractionCreate)
-
-	//起動
-	err = discord.Open()
-	if err != nil {
-		panic(err)
-	}
-
-	defer func() {
-		//Bot停止
-		discord.Close()
-
-		//サーバー停止
-		if IsServerBooted() {
-			//一応連絡
-			sendCmd("say Sorry, Bot has stopped.")
+	if DiscordBotToken != "" {
+		//bot起動準備
+		discord, err := discordgo.New("Bot " + DiscordBotToken)
+		if err != nil {
+			panic(err)
 		}
-	}()
-	//bot停止対策
+
+		//eventトリガー設定
+		discord.AddHandler(onReady)
+		discord.AddHandler(onMessageCreate)
+		discord.AddHandler(onInteractionCreate)
+
+		//起動
+		err = discord.Open()
+		if err != nil {
+			panic(err)
+		}
+
+		defer func() {
+			//Bot停止
+			discord.Close()
+
+			//サーバー停止
+			if IsServerBooted() {
+				//一応連絡
+				sendCmd("say Sorry, Bot has stopped.")
+			}
+		}()
+	}
+
+	//停止対策
 	<-utils.BreakSignal()
 }
 
