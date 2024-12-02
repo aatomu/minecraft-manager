@@ -23,6 +23,12 @@ type LogConfig struct {
 	Command string   `json:"command"`
 }
 
+const (
+	CommandError   = 0xFF2929
+	CommandWarning = 0xFAB12F
+	CommandSuccess = 0x6EC207
+)
+
 var (
 	ServerDir                = os.Getenv("server_dir")
 	BackupDir                = os.Getenv("backup_dir")
@@ -224,34 +230,62 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 	case "start":
 		if IsServerBooted() {
 			res.Reply(&discordgo.InteractionResponseData{
-				Content: "[ERROR]: Server has running",
-				Flags:   discordgo.MessageFlagsEphemeral,
+				Embeds: []*discordgo.MessageEmbed{
+					{
+						Color: CommandError,
+						Title: "Server has running",
+					},
+				},
+				Flags: discordgo.MessageFlagsEphemeral,
 			})
 			return
 		}
 
 		res.Reply(&discordgo.InteractionResponseData{
-			Content: "[Success]: Server boot command called\nPlease wait...",
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       CommandSuccess,
+					Title:       "Server boot command called",
+					Description: "Please wait...",
+				},
+			},
 		})
 		go serverStart()
 
 	case "stop":
 		if !IsServerBooted() {
 			res.Reply(&discordgo.InteractionResponseData{
-				Content: "[ERROR]: Server has not running",
-				Flags:   discordgo.MessageFlagsEphemeral,
+				Embeds: []*discordgo.MessageEmbed{
+					{
+						Color: CommandError,
+						Title: "Server has not running",
+					},
+				},
+				Flags: discordgo.MessageFlagsEphemeral,
 			})
 			return
 		}
 
 		res.Reply(&discordgo.InteractionResponseData{
-			Content: "[Success] Server shutdown command called\nPlease wait...",
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       CommandSuccess,
+					Title:       "Server shutdown command called",
+					Description: "Please wait...",
+				},
+			},
 		})
 		go serverStop()
 
 	case "backup":
 		res.Reply(&discordgo.InteractionResponseData{
-			Content: "[Success] Server backup command called\nPlease wait...",
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       CommandSuccess,
+					Title:       "Server backup command called",
+					Description: "Please wait...",
+				},
+			},
 		})
 		go serverBackup()
 
@@ -259,7 +293,13 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 		timestamp := i.CommandOptions["timestamp"].StringValue()
 
 		res.Reply(&discordgo.InteractionResponseData{
-			Content: "[Success] Server backup command called\nPlease wait...",
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       CommandSuccess,
+					Title:       "Server backup command called",
+					Description: "Please wait...",
+				},
+			},
 		})
 		go serverRestore(timestamp)
 	}
