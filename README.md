@@ -73,31 +73,31 @@ rcon_password="
 (`example.env`を Copy&Modify がおすすめ)
 
 各項目の説明:
-|Key|Value|
-| :-:|:-:|
-|java|Image 作成のときに使用した TAG|
-|jvm_arg|java の引数|
-|server_jar|server.jar の名前を記入|
-|server_arg|server.jar の引数|
-|server_dir|サーバーディレクトリ|
-|backup_dir|サーバーディレクトリのバックアップ先|
-|custom_dir|特殊マウントディレクトリ|
-|ssh_user|docker を実行している User|
-|ssh_port|docker を実行してる User へのアクセス Port|
-|script_boot|server を起動するスクリプトへのフルパス|
-|script_backup|server をバックアップするスクリプトへのフルパス|
-|script_backup_rsync_arg|server をバックアップするスクリプトへ引数|
-|script_backup_rsync_command|server をバックアップするスクリプトへ引数|
-|script_restore|server のデータ復旧するスクリプトへ引数|
-|discord_bot_token|discord Bot の Token|
-|discord_admin_role|discord からコマンドを実行できるロール ID|
-|discord_webhook_url|discord へメッセージを送る Webhook URL|
-|rcon_port|minecraft server への Rcon アクセスポート|
-|rcon_password|minecraft server への Rcon アクセスパスワード|
+|Key|Value|Required|
+| :-:|:-:| -:|
+|java|Image 作成のときに使用した TAG|true|
+|jvm_arg|java の引数|true|
+|server_jar|server.jar の名前を記入|true|
+|server_arg|server.jar の引数|false|
+|server_dir|サーバーディレクトリ|true|
+|backup_dir|サーバーディレクトリのバックアップ先|false|
+|custom_dir|特殊マウントディレクトリ|false|
+|ssh_user|docker を実行している User|false|
+|ssh_port|docker を実行してる User へのアクセス Port|false|
+|script_boot|server を起動するスクリプトへのフルパス|false|
+|script_backup|server をバックアップするスクリプトへのフルパス|false|
+|script_backup_rsync_arg|server をバックアップするスクリプトへ引数|false|
+|script_backup_rsync_command|server をバックアップするスクリプトへ引数|false|
+|script_restore|server のデータ復旧するスクリプトへ引数|false|
+|discord_bot_token|discord Bot の Token|false|
+|discord_admin_role|discord からコマンドを実行できるロール ID|false|
+|discord_webhook_url|discord へメッセージを送る Webhook URL|true|
+|rcon_port|minecraft server への Rcon アクセスポート|false|
+|rcon_password|minecraft server への Rcon アクセスパスワード|false|
 
 > [!NOTE]
 >
-> `subOps=...`は必要な際にコメントアウトを外してください
+> `server_arg=...`は必要な際にコメントアウトを外してください
 
 ### 1-3. サーバー の起動
 
