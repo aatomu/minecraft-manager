@@ -31,13 +31,14 @@ func LogReader() {
 				return
 			}
 			for _, logConfig := range Log {
+				isRegexpMatched := false
 				for _, regexpString := range logConfig.Regexp {
 					reg := regexp.MustCompile(regexpString)
 					if !reg.MatchString(line) {
 						continue
 					}
-
-					switch logConfig.Command {
+					isRegexpMatched = true
+					switch logConfig.Action {
 					case "bypass":
 						match := reg.FindStringSubmatch(line) // $2:Message
 						SendWebhook(discordgo.WebhookParams{
@@ -60,6 +61,55 @@ func LogReader() {
 							Content:   match[2],
 						})
 						return
+					}
+				}
+				// 特殊送信
+				if isRegexpMatched {
+					switch logConfig.Command {
+					case "server_starting":
+						SendWebhook(discordgo.WebhookParams{
+							Embeds: []*discordgo.MessageEmbed{
+								{
+									Color: CommandWarning,
+									Title: "Minecraft server starting",
+								},
+							},
+						})
+
+					case "server_started":
+						SendWebhook(discordgo.WebhookParams{
+							Embeds: []*discordgo.MessageEmbed{
+								{
+									Color: CommandSuccess,
+									Title: "Minecraft server started",
+								},
+							},
+						})
+
+					case "server_stopping":
+						time.Sleep(5 * time.Second)
+
+						if IsServerBooted() {
+							return
+						}
+						SendWebhook(discordgo.WebhookParams{
+							Embeds: []*discordgo.MessageEmbed{
+								{
+									Color: CommandWarning,
+									Title: "Minecraft server stopping",
+								},
+							},
+						})
+
+					case "server_stopped":
+						SendWebhook(discordgo.WebhookParams{
+							Embeds: []*discordgo.MessageEmbed{
+								{
+									Color: CommandError,
+									Title: "Minecraft server stopped",
+								},
+							},
+						})
 					}
 				}
 			}
