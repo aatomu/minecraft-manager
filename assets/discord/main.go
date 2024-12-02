@@ -221,40 +221,44 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 	case "start":
 		if IsServerBooted() {
 			res.Reply(&discordgo.InteractionResponseData{
-				Content: "Server is running.",
+				Content: "[ERROR]: Server has running",
 				Flags:   discordgo.MessageFlagsEphemeral,
 			})
 			return
 		}
 
-		go serverStart()
 		res.Reply(&discordgo.InteractionResponseData{
-			Content: "Server is booting...",
+			Content: "[Success]: Server boot command called\nPlease wait...",
 		})
+		go serverStart()
+
 	case "stop":
 		if !IsServerBooted() {
 			res.Reply(&discordgo.InteractionResponseData{
-				Content: "Server is not running.",
+				Content: "[ERROR]: Server has not running",
 				Flags:   discordgo.MessageFlagsEphemeral,
 			})
 			return
 		}
 
+		res.Reply(&discordgo.InteractionResponseData{
+			Content: "[Success] Server shutdown command called\nPlease wait...",
+		})
 		go serverStop()
-		res.Reply(&discordgo.InteractionResponseData{
-			Content: "Server is shutting down...",
-		})
+
 	case "backup":
-		go serverBackup()
 		res.Reply(&discordgo.InteractionResponseData{
-			Content: "Server will be backed up....",
+			Content: "[Success] Server backup command called\nPlease wait...",
 		})
+		go serverBackup()
+
 	case "restore":
 		timestamp := i.CommandOptions["timestamp"].StringValue()
-		go serverRestore(timestamp)
+
 		res.Reply(&discordgo.InteractionResponseData{
-			Content: "Server will be restore....",
+			Content: "[Success] Server backup command called\nPlease wait...",
 		})
+		go serverRestore(timestamp)
 	}
 }
 
