@@ -122,12 +122,10 @@ rcon_password="
 ### 2-1. discord-boot.sh の設定
 
 ```bash
-readonly DOCKER_SOCK="/var/run/docker.sock"
 readonly SSH_IDENTITY="${HOME}/.ssh/minecraft-manager"
 readonly CONFIG_DIR="${PWD%/*}/config"
 ```
 
-`DOCKER_SOCK`: docker.d の.sock の場所に \
 `SSH_IDENTITY`: minecraft-manager で使用される SSH-key \
 `CONFIG_DIR`: `discord-boot.sh`で使用する`servers.json`へのフルパス
 
