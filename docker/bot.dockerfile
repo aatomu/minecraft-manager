@@ -8,7 +8,7 @@ ADD ./assets/discord/* /app/
 RUN go build -o /chat .
 
 # 最小イメージ
-FROM ubuntu
+FROM alpine
 COPY --from=build /chat /usr/bin/
 # TimeZoneの指定
 ENV DEBIAN_FRONTEND=noninteractive
