@@ -16,158 +16,150 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func LogReader() {
-	var text chan string = make(chan string)
-	go tailLog(text)
-
-	for {
-		line := <-text
-		PrintLog(MinecraftStandard, line)
-
-		// discord転送
-		go func() {
-			if len(line) > 2000 {
-				// Embed Text Max is 2000 char
-				return
-			}
-			for _, logConfig := range Log {
-				isRegexpMatched := false
-				for _, regexpString := range logConfig.Regexp {
-					reg := regexp.MustCompile(regexpString)
-					if !reg.MatchString(line) {
-						continue
-					}
-					isRegexpMatched = true
-					switch logConfig.Action {
-					case "bypass":
-						match := reg.FindStringSubmatch(line) // $2:Message
-						SendWebhook(discordgo.WebhookParams{
-							Content: match[1],
-						})
-						return
-					case "player":
-						match := reg.FindStringSubmatch(line) // $1:MCID(unsafe) $2:Message
-						mcid := regexp.MustCompile(`([\w_]{3,16})`).FindStringSubmatch(match[1])
-						SendWebhook(discordgo.WebhookParams{
-							Embeds: GetWebhookEmbed(mcid[1], fmt.Sprintf("%s %s", mcid[1], match[2])),
-						})
-						return
-					case "message":
-						match := reg.FindStringSubmatch(line) // $1:MCID(unsafe) $2:Message
-						mcid := regexp.MustCompile(`([\w_]{3,16})`).FindStringSubmatch(match[1])
-						SendWebhook(discordgo.WebhookParams{
-							Username:  mcid[1],
-							AvatarURL: "https://minotar.net/helm/" + mcid[1] + "/600",
-							Content:   match[2],
-						})
-						return
-					}
-				}
-				// 特殊送信
-				if isRegexpMatched {
-					switch logConfig.Command {
-					case "server_starting":
-						SendWebhook(discordgo.WebhookParams{
-							Embeds: []*discordgo.MessageEmbed{
-								{
-									Color: CommandWarning,
-									Title: "Minecraft server starting",
-								},
-							},
-						})
-
-					case "server_started":
-						SendWebhook(discordgo.WebhookParams{
-							Embeds: []*discordgo.MessageEmbed{
-								{
-									Color: CommandSuccess,
-									Title: "Minecraft server started",
-								},
-							},
-						})
-
-					case "server_stopping":
-						time.Sleep(5 * time.Second)
-
-						if IsServerBooted() {
-							return
-						}
-						SendWebhook(discordgo.WebhookParams{
-							Embeds: []*discordgo.MessageEmbed{
-								{
-									Color: CommandWarning,
-									Title: "Minecraft server stopping",
-								},
-							},
-						})
-
-					case "server_stopped":
-						SendWebhook(discordgo.WebhookParams{
-							Embeds: []*discordgo.MessageEmbed{
-								{
-									Color: CommandError,
-									Title: "Minecraft server stopped",
-								},
-							},
-						})
-					}
-				}
-			}
-		}()
-	}
-}
-
-func tailLog(text chan<- string) {
-	// New "latest.log" Checker
+func tailLog() {
 	watcher, _ := fsnotify.NewWatcher()
 	watcher.Add(*LogDir)
-	// "latest.log" File Path
-	var logFile = filepath.Join(*LogDir, "latest.log")
+	var logFilePath = filepath.Join(*LogDir, "latest.log")
+	var firstRead = true
 
 	// Tailing Log File
 	for {
 		func() {
 			// Open File
-			f, err := os.Open(logFile)
+			f, err := os.Open(logFilePath)
 			if err != nil {
 				return
+			}
+			if firstRead {
+				// Jump to EOF
+				f.Seek(0, 2)
+				firstRead = false
 			}
 			defer f.Close()
 
 			// Check File Events
-			keepFile := true
-			isWrite := make(chan bool)
+			changeFile := false
+			isWroteFile := make(chan bool)
 			go func() {
 				for {
 					event := <-watcher.Events
 					switch {
-					case event.Name == logFile && event.Op == fsnotify.Create:
-						keepFile = false
+					case event.Name == logFilePath && event.Op == fsnotify.Create:
+						changeFile = true
+						return
 					case event.Op == fsnotify.Write:
-						isWrite <- true
+						isWroteFile <- true
 					}
 				}
 			}()
 
 			// Read File
-			firstBlocking := true
 			reader := bufio.NewReader(f)
-			for keepFile {
+			for !changeFile {
 				line, err := reader.ReadString('\n')
 				if err != nil {
 					if err == io.EOF { // End Of File
-						firstBlocking = false
-						<-isWrite
+						<-isWroteFile
 						continue
 					}
 					return
 				}
-				if !firstBlocking {
-					text <- strings.Trim(line, "\n")
-				}
+				logAnalyze(strings.Trim(line, "\n"))
 			}
 		}()
-		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func logAnalyze(line string) {
+	PrintLog(MinecraftStandard, line)
+
+	if len(line) > 2000 {
+		// Embed Text Max is 2000 char
+		return
+	}
+
+	for _, logConfig := range Log {
+		isRegexpMatched := false
+		for _, regexpString := range logConfig.Regexp {
+			reg := regexp.MustCompile(regexpString)
+			if !reg.MatchString(line) {
+				continue
+			}
+			isRegexpMatched = true
+			switch logConfig.Action {
+			case "bypass":
+				match := reg.FindStringSubmatch(line) // $2:Message
+				SendWebhook(discordgo.WebhookParams{
+					Content: match[1],
+				})
+				return
+			case "player":
+				match := reg.FindStringSubmatch(line) // $1:MCID(unsafe) $2:Message
+				mcid := regexp.MustCompile(`([\w_]{3,16})`).FindStringSubmatch(match[1])
+				SendWebhook(discordgo.WebhookParams{
+					Embeds: GetWebhookEmbed(mcid[1], fmt.Sprintf("%s %s", mcid[1], match[2])),
+				})
+				return
+			case "message":
+				match := reg.FindStringSubmatch(line) // $1:MCID(unsafe) $2:Message
+				mcid := regexp.MustCompile(`([\w_]{3,16})`).FindStringSubmatch(match[1])
+				SendWebhook(discordgo.WebhookParams{
+					Username:  mcid[1],
+					AvatarURL: "https://minotar.net/helm/" + mcid[1] + "/600",
+					Content:   match[2],
+				})
+				return
+			}
+		}
+		// 特殊送信
+		if isRegexpMatched {
+			switch logConfig.Command {
+			case "server_starting":
+				SendWebhook(discordgo.WebhookParams{
+					Embeds: []*discordgo.MessageEmbed{
+						{
+							Color: CommandWarning,
+							Title: "Minecraft server starting",
+						},
+					},
+				})
+
+			case "server_started":
+				SendWebhook(discordgo.WebhookParams{
+					Embeds: []*discordgo.MessageEmbed{
+						{
+							Color: CommandSuccess,
+							Title: "Minecraft server started",
+						},
+					},
+				})
+
+			case "server_stopping":
+				time.Sleep(5 * time.Second)
+
+				if IsServerBooted() {
+					return
+				}
+				SendWebhook(discordgo.WebhookParams{
+					Embeds: []*discordgo.MessageEmbed{
+						{
+							Color: CommandWarning,
+							Title: "Minecraft server stopping",
+						},
+					},
+				})
+
+			case "server_stopped":
+				SendWebhook(discordgo.WebhookParams{
+					Embeds: []*discordgo.MessageEmbed{
+						{
+							Color: CommandError,
+							Title: "Minecraft server stopped",
+						},
+					},
+				})
+			}
+		}
 	}
 }
 

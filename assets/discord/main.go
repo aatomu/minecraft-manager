@@ -73,7 +73,7 @@ func main() {
 	fmt.Println("Discord Webhook URL :", DiscordWebhookUrl)
 
 	// 呼び出し
-	go LogReader()
+	go tailLog()
 	//--------------Bot本体--------------
 	if DiscordBotToken != "" {
 		//bot起動準備
