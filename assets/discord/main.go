@@ -65,17 +65,17 @@ func main() {
 		panic("log transfer config not found")
 	}
 
-	PrintLog(CommandStandard, "=============== [Minecraft] ===============")
-	PrintLog(CommandStandard, fmt.Sprintf("Target Server       : %s", *ServerName))
-	PrintLog(CommandStandard, fmt.Sprintf("Server Directory    : %s", ServerDir))
-	PrintLog(CommandStandard, fmt.Sprintf("Backup Directory    : %s", BackupDir))
-	PrintLog(CommandStandard, "=============== [Discord] ===============")
-	PrintLog(CommandStandard, fmt.Sprintf("Discord Bot Token   : %s", DiscordBotToken))
-	PrintLog(CommandStandard, fmt.Sprintf("Discord Webhook URL : %s", DiscordWebhookUrl))
-	PrintLog(CommandStandard, "=============== [Server Control] ===============")
-	PrintLog(CommandStandard, fmt.Sprintf("SSH Login           : %s@localhost:%s", SshUser, SshPort))
-	PrintLog(CommandStandard, fmt.Sprintf("Rcon Login Port     : %s", RconPort))
-	PrintLog(CommandStandard, fmt.Sprintf("Rcon Login Password : %s", RconPassword))
+	PrintLog(ManagerStandard, "=============== [Minecraft] ===============")
+	PrintLog(ManagerStandard, fmt.Sprintf("Target Server       : %s", *ServerName))
+	PrintLog(ManagerStandard, fmt.Sprintf("Server Directory    : %s", ServerDir))
+	PrintLog(ManagerStandard, fmt.Sprintf("Backup Directory    : %s", BackupDir))
+	PrintLog(ManagerStandard, "=============== [Discord] ===============")
+	PrintLog(ManagerStandard, fmt.Sprintf("Discord Bot Token   : %s", DiscordBotToken))
+	PrintLog(ManagerStandard, fmt.Sprintf("Discord Webhook URL : %s", DiscordWebhookUrl))
+	PrintLog(ManagerStandard, "=============== [Server Control] ===============")
+	PrintLog(ManagerStandard, fmt.Sprintf("SSH Login           : %s@localhost:%s", SshUser, SshPort))
+	PrintLog(ManagerStandard, fmt.Sprintf("Rcon Login Port     : %s", RconPort))
+	PrintLog(ManagerStandard, fmt.Sprintf("Rcon Login Password : %s", RconPassword))
 	fmt.Print(strings.Repeat("\n", 5))
 
 	// 呼び出し
