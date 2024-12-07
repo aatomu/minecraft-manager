@@ -90,17 +90,12 @@ func logAnalyze(line string) {
 				continue
 			}
 
-			if logConfig.Command != "" {
-				sendServerStatus(logConfig.Command)
-			}
-
 			switch logConfig.Action {
 			case "bypass":
 				match := reg.FindStringSubmatch(line) // $2:Message
 				SendWebhook(discordgo.WebhookParams{
 					Content: match[1],
 				})
-				return
 
 			case "player":
 				match := reg.FindStringSubmatch(line) // $1:MCID(unsafe) $2:Message
@@ -108,7 +103,6 @@ func logAnalyze(line string) {
 				SendWebhook(discordgo.WebhookParams{
 					Embeds: GetWebhookEmbed(mcid[1], fmt.Sprintf("%s %s", mcid[1], match[2])),
 				})
-				return
 
 			case "message":
 				match := reg.FindStringSubmatch(line) // $1:MCID(unsafe) $2:Message
@@ -118,7 +112,10 @@ func logAnalyze(line string) {
 					AvatarURL: "https://minotar.net/helm/" + mcid[1] + "/600",
 					Content:   match[2],
 				})
-				return
+			}
+
+			if logConfig.Command != "" {
+				sendServerStatus(logConfig.Command)
 			}
 		}
 	}
