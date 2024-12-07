@@ -76,6 +76,7 @@ func main() {
 	PrintLog(CommandStandard, fmt.Sprintf("SSH Login           : %s@localhost:%s", SshUser, SshPort))
 	PrintLog(CommandStandard, fmt.Sprintf("Rcon Login Port     : %s", RconPort))
 	PrintLog(CommandStandard, fmt.Sprintf("Rcon Login Password : %s", RconPassword))
+	fmt.Print(strings.Repeat("\n", 5))
 
 	// 呼び出し
 	go tailLog()
