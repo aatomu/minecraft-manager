@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -25,9 +24,9 @@ type LogConfig struct {
 }
 
 const (
-	CommandError   = 0xFF2929
-	CommandWarning = 0xFAB12F
-	CommandSuccess = 0x6EC207
+	ColorError   = 0xFF2929
+	ColorWarning = 0xFAB12F
+	ColorSuccess = 0x6EC207
 )
 
 var (
@@ -66,17 +65,17 @@ func main() {
 		panic("log transfer config not found")
 	}
 
-	fmt.Println("=============== [Minecraft] ===============")
-	fmt.Println("Target Server       :", *ServerName)
-	fmt.Println("Server Directory    :", ServerDir)
-	fmt.Println("Backup Directory    :", BackupDir)
-	fmt.Println("=============== [Discord] ===============")
-	fmt.Println("Discord Bot Token   :", DiscordBotToken)
-	fmt.Println("Discord Webhook URL :", DiscordWebhookUrl)
-	fmt.Println("=============== [Server Control] ===============")
-	fmt.Println("SSH Login           :", fmt.Sprintf("%s@localhost:%s", SshUser, SshPort))
-	fmt.Println("Rcon Login Port     :", RconPort)
-	fmt.Println("Rcon Login Password :", RconPassword)
+	PrintLog(CommandStandard, "=============== [Minecraft] ===============")
+	PrintLog(CommandStandard, fmt.Sprintf("Target Server       : %s", *ServerName))
+	PrintLog(CommandStandard, fmt.Sprintf("Server Directory    : %s", ServerDir))
+	PrintLog(CommandStandard, fmt.Sprintf("Backup Directory    : %s", BackupDir))
+	PrintLog(CommandStandard, "=============== [Discord] ===============")
+	PrintLog(CommandStandard, fmt.Sprintf("Discord Bot Token   : %s", DiscordBotToken))
+	PrintLog(CommandStandard, fmt.Sprintf("Discord Webhook URL : %s", DiscordWebhookUrl))
+	PrintLog(CommandStandard, "=============== [Server Control] ===============")
+	PrintLog(CommandStandard, fmt.Sprintf("SSH Login           : %s@localhost:%s", SshUser, SshPort))
+	PrintLog(CommandStandard, fmt.Sprintf("Rcon Login Port     : %s", RconPort))
+	PrintLog(CommandStandard, fmt.Sprintf("Rcon Login Password : %s", RconPassword))
 
 	// 呼び出し
 	go tailLog()
@@ -118,7 +117,7 @@ func main() {
 // Botの起動時に呼び出し
 func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 	//起動メッセージ
-	log.Printf("\"%s\" server bot is ready.", *ServerName)
+	PrintLog(ManagerStandard, fmt.Sprintf("`%s` manager discord bot is ready.\n", *ServerName))
 
 	URL, _ := url.Parse(DiscordWebhookUrl)
 	webhook, err := discord.Webhook(strings.Split(URL.Path, "/")[3])
@@ -239,7 +238,7 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 			res.Reply(&discordgo.InteractionResponseData{
 				Embeds: []*discordgo.MessageEmbed{
 					{
-						Color: CommandError,
+						Color: ColorError,
 						Title: "Server has running",
 					},
 				},
@@ -251,7 +250,7 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 		res.Reply(&discordgo.InteractionResponseData{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color:       CommandSuccess,
+					Color:       ColorSuccess,
 					Title:       "Server boot command called",
 					Description: "Please wait...",
 				},
@@ -264,7 +263,7 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 			res.Reply(&discordgo.InteractionResponseData{
 				Embeds: []*discordgo.MessageEmbed{
 					{
-						Color: CommandError,
+						Color: ColorError,
 						Title: "Server has not running",
 					},
 				},
@@ -276,7 +275,7 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 		res.Reply(&discordgo.InteractionResponseData{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color:       CommandSuccess,
+					Color:       ColorSuccess,
 					Title:       "Server shutdown command called",
 					Description: "Please wait...",
 				},
@@ -288,7 +287,7 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 		res.Reply(&discordgo.InteractionResponseData{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color:       CommandSuccess,
+					Color:       ColorSuccess,
 					Title:       "Server backup command called",
 					Description: "Please wait...",
 				},
@@ -302,7 +301,7 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 		res.Reply(&discordgo.InteractionResponseData{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color:       CommandSuccess,
+					Color:       ColorSuccess,
 					Title:       "Server backup command called",
 					Description: "Please wait...",
 				},

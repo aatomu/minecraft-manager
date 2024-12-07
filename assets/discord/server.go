@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -127,7 +128,7 @@ func sendServerStatus(command string) {
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color: CommandWarning,
+					Color: ColorWarning,
 					Title: "Minecraft server starting",
 				},
 			},
@@ -137,7 +138,7 @@ func sendServerStatus(command string) {
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color: CommandSuccess,
+					Color: ColorSuccess,
 					Title: "Minecraft server started",
 				},
 			},
@@ -152,7 +153,7 @@ func sendServerStatus(command string) {
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color: CommandWarning,
+					Color: ColorWarning,
 					Title: "Minecraft server stopping",
 				},
 			},
@@ -162,7 +163,7 @@ func sendServerStatus(command string) {
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color: CommandError,
+					Color: ColorError,
 					Title: "Minecraft server stopped",
 				},
 			},
@@ -175,13 +176,13 @@ func serverStart() {
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color:       CommandError,
+					Color:       ColorError,
 					Title:       "Server boot script execution failed",
 					Description: "Please check log",
 				},
 			},
 		})
-		PrintLog(OutputError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
+		PrintLog(CommandError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
 	}
 }
 
@@ -200,13 +201,13 @@ func serverBackup() {
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color:       CommandError,
+					Color:       ColorError,
 					Title:       "Server backup script execution failed",
 					Description: "Please check log",
 				},
 			},
 		})
-		PrintLog(OutputError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
+		PrintLog(CommandError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
 	}
 	sendCmd("save-on")
 }
@@ -217,13 +218,13 @@ func serverRestore(timestamp string) {
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color:       CommandError,
+					Color:       ColorError,
 					Title:       "Server restore script execution failed",
 					Description: "Please check log",
 				},
 			},
 		})
-		PrintLog(OutputError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
+		PrintLog(CommandError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
 	}
 }
 
@@ -269,8 +270,13 @@ func sshCommand(cmd string) (command *exec.Cmd) {
 type OutputType int
 
 const (
-	OutputStandard OutputType = iota
-	OutputError
+	// Source: minecraft-manager
+	ManagerStandard OutputType = iota
+	ManagerError
+	// Source: user input/discord interaction
+	CommandStandard
+	CommandError
+	// Source: minecraft latest.log/Rcon
 	MinecraftInput
 	MinecraftStandard
 	MinecraftError
@@ -278,15 +284,19 @@ const (
 
 func PrintLog(t OutputType, m string) {
 	switch t {
-	case OutputStandard:
-		fmt.Printf("%s)   %s\n", *ServerName, m)
-	case OutputError:
-		fmt.Printf("%s))) %s\n", *ServerName, m)
+	case ManagerStandard:
+		log.Printf("[Manager/OUTPUT]  : %s\n", m)
+	case ManagerError:
+		log.Printf("[Manager/ERROR]   : %s\n", m)
+	case CommandStandard:
+		log.Printf("[Command/OUTPUT]  : %s\n", m)
+	case CommandError:
+		log.Printf("[Command/ERROR]   : %s\n", m)
 	case MinecraftInput:
-		fmt.Printf("%s<   %s\n", *ServerName, m)
+		log.Printf("[Minecraft/INPUT] : %s\n", m)
 	case MinecraftStandard:
-		fmt.Printf("%s>   %s\n", *ServerName, m)
+		log.Printf("[Minecraft/OUTPUT]: %s\n", m)
 	case MinecraftError:
-		fmt.Printf("%s>>> %s\n", *ServerName, m)
+		log.Printf("[Minecraft/ERROR] : %s\n", m)
 	}
 }
