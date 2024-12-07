@@ -223,7 +223,7 @@ func serverRestore(timestamp string) {
 
 // 鯖確認
 func IsServerBooted() (isBooted bool) {
-	out, err := sshCommand(fmt.Sprintf("docker ps -a -q --filter name=^%s_mc", *ServerName)).CombinedOutput()
+	out, err := getCommand(fmt.Sprintf("ssh -o LogLevel=quiet -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p %s -i /identity %s@localhost %s", SshPort, SshUser, fmt.Sprintf("docker ps -a -q --filter name=^%s_mc", *ServerName))).CombinedOutput()
 	if err != nil {
 		return true
 	}
@@ -256,7 +256,7 @@ func getCommand(cmd string) (command *exec.Cmd) {
 }
 
 func sshCommand(cmd string) (command *exec.Cmd) {
-	cmd = fmt.Sprintf("ssh -v -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p %s -i /identity %s@localhost %s", SshPort, SshUser, cmd)
+	cmd = fmt.Sprintf("ssh -v -o LogLevel=quiet -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p %s -i /identity %s@localhost %s", SshPort, SshUser, cmd)
 	return getCommand(cmd)
 }
 
