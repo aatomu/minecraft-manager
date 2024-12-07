@@ -19,6 +19,7 @@ import (
 func tailLog() {
 	watcher, _ := fsnotify.NewWatcher()
 	watcher.Add(*LogDir)
+	defer watcher.Close()
 	var logFilePath = filepath.Join(*LogDir, "latest.log")
 	var firstRead = true
 
@@ -38,14 +39,14 @@ func tailLog() {
 			defer f.Close()
 
 			// Check File Events
-			changeFile := false
+			changeFile := make(chan bool)
 			isWroteFile := make(chan bool)
 			go func() {
 				for {
 					event := <-watcher.Events
 					switch {
-					case event.Name == logFilePath && event.Op == fsnotify.Create:
-						changeFile = true
+					case event.Name == logFilePath && event.Op == fsnotify.Rename:
+						changeFile <- true
 						return
 					case event.Op == fsnotify.Write:
 						isWroteFile <- true
@@ -55,12 +56,16 @@ func tailLog() {
 
 			// Read File
 			reader := bufio.NewReader(f)
-			for !changeFile {
+			for {
 				line, err := reader.ReadString('\n')
 				if err != nil {
 					if err == io.EOF { // End Of File
-						<-isWroteFile
-						continue
+						select {
+						case <-changeFile:
+							return
+						case <-isWroteFile:
+							continue
+						}
 					}
 					return
 				}
