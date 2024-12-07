@@ -40,33 +40,32 @@ Docker/Discord を利用した Minecraft Manager
 
 ```env
 #! Java Arguments
-java=21-jdk-jammy
+java="21"
 jvm_arg="-Xms2G -Xmx2G"
 #! Server Arguments
-server_jar=server.jar
+server_jar="server.jar"
 #server_arg="--forceUpgrade --eraseCache"
 #! Directory Config
-server_dir=/home/atomu/servers/example_1.21.3
-backup_dir=/home/atomu/backup/example_1.21.3
-custom_dir=/home/atomu/custom
+server_dir="/home/atomu/servers/example_1.21.3"
+backup_dir="/home/atomu/backup/example_1.21.3"
+custom_dir="/home/atomu/custom"
 
 #! SSH Config
-ssh_user="
-ssh_port="
+ssh_user=""
+ssh_port=""
 #! Server Operation Script
-script_boot="
-script_backup="
-script_backup_rsync_arg="
-script_backup_rsync_command="
-script_restore="
+script_boot=""
+script_backup=""
+script_backup_rsync_arg=""
+script_backup_rsync_command=""
+script_restore=""
 #! Discord Bot Config
-discord_bot_token="
-discord_admin_role="
-discord_webhook_url="
+discord_bot_token=""
+discord_admin_role=""
+discord_webhook_url=""
 #! Rcon/Console Config
-rcon_port="
-rcon_password="
-
+rcon_port=""
+rcon_password=""
 ```
 
 上記のようにすべて埋めた`<Server>.env`を`config/`に入れてください \
