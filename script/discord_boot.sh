@@ -8,6 +8,21 @@ readonly SERVER_NAME="${1}"
 readonly SSH_IDENTITY="${HOME}/.ssh/minecraft-manager"
 readonly CONFIG_DIR="$(cd ${SCRIPT_PATH}/../config ; echo ${PWD})"
 
+# Image delete
+if [ "${SERVER_NAME}" == "" ]; then
+  echo "[INFO]: Delete docker image: \`mc_chat:latest\`"
+  docker rmi mc_chat:latest
+fi
+
+# 新規ビルド
+if [ "$(docker images | grep "mc_chat")" == "" ]; then
+  echo "[INFO]: Build start docker image: \`mc_chat:latest\`"
+  docker build --no-cache -f ../docker/bot.dockerfile -t mc_chat:latest ../
+  echo "[INFO]: Build end docker image: \`mc_chat:latest\`"
+
+  exit 0
+fi
+
 # SSHkey check
 if [ ! -e ${SSH_IDENTITY} ]; then
   echo "[INFO]: Create minecraft-manager ssh-key"
@@ -16,26 +31,16 @@ if [ ! -e ${SSH_IDENTITY} ]; then
   echo "[INFO]: Finish minecraft-manager ssh-key"
 fi
 
-# Docker image check
-if [ "${SERVER_NAME}" == "" ]; then
-  echo "[INFO]: Docker image remove"
-  docker rmi mc_chat
-  echo "[INFO]: Docker image build start"
-  docker build --no-cache -f ../docker/bot.dockerfile -t mc_chat:latest ../
-  echo "[INFO]: Docker image build finish"
-  exit 0
-fi
-
 # Load Environment
 source ../config/${SERVER_NAME}.env
 
 # Container check
 if [ "$(docker ps -a -q --filter name=^${SERVER_NAME}_chat | wc -l)" == "0" ]; then
-  echo "[INFO]: Docker \"${SERVER_NAME}_chat\" container start"
+  echo "[INFO]: Docker `${SERVER_NAME}_chat` container start"
   docker run -itd --name ${SERVER_NAME}_chat -v ${SSH_IDENTITY}:/identity -v ${CONFIG_DIR}:/config -v ${server_dir}/logs:/logs --env-file="${CONFIG_DIR}/${SERVER_NAME}.env" --network=host mc_chat:latest --name="${SERVER_NAME}" 
 else
-  echo "[INFO]: Docker \"${SERVER_NAME}_chat\" container stop"
+  echo "[INFO]: Docker `${SERVER_NAME}_chat` container stop"
   docker stop ${SERVER_NAME}_chat
-  echo "[INFO]: Docker \"${SERVER_NAME}_chat\" container remove"
+  echo "[INFO]: Docker `${SERVER_NAME}_chat` container remove"
   docker rm ${SERVER_NAME}_chat
 fi

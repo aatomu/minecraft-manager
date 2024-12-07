@@ -1,6 +1,5 @@
 #! /bin/bash
 cd $(dirname "$0")
-readonly SCRIPTPATH="${PWD}"
 
 # ${1} SERVER_DIR
 # ${2} BACKUP_DIR / REMOTE_BACKUP_DIR
