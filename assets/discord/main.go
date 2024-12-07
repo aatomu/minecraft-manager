@@ -31,20 +31,20 @@ const (
 )
 
 var (
-	ServerDir                = os.Getenv("server_dir")
-	BackupDir                = os.Getenv("backup_dir")
-	SshUser                  = os.Getenv("ssh_user")
-	SshPort                  = os.Getenv("ssh_port")
-	ScriptBoot               = os.Getenv("script_boot")
-	ScriptBackup             = os.Getenv("script_backup")
-	ScriptBackupRsyncArg     = os.Getenv("script_backup_rsync_arg")
-	ScriptBackupRsyncCommand = os.Getenv("script_backup_rsync_command")
-	ScriptRestore            = os.Getenv("script_restore")
-	DiscordBotToken          = os.Getenv("discord_bot_token")
-	DiscordAdminRole         = os.Getenv("discord_admin_role")
-	DiscordWebhookUrl        = os.Getenv("discord_webhook_url")
-	RconPort                 = os.Getenv("rcon_port")
-	RconPassword             = os.Getenv("rcon_password")
+	ServerDir                = TrimDoubleQuote(os.Getenv("server_dir"))
+	BackupDir                = TrimDoubleQuote(os.Getenv("backup_dir"))
+	SshUser                  = TrimDoubleQuote(os.Getenv("ssh_user"))
+	SshPort                  = TrimDoubleQuote(os.Getenv("ssh_port"))
+	ScriptBoot               = TrimDoubleQuote(os.Getenv("script_boot"))
+	ScriptBackup             = TrimDoubleQuote(os.Getenv("script_backup"))
+	ScriptBackupRsyncArg     = TrimDoubleQuote(os.Getenv("script_backup_rsync_arg"))
+	ScriptBackupRsyncCommand = TrimDoubleQuote(os.Getenv("script_backup_rsync_command"))
+	ScriptRestore            = TrimDoubleQuote(os.Getenv("script_restore"))
+	DiscordBotToken          = TrimDoubleQuote(os.Getenv("discord_bot_token"))
+	DiscordAdminRole         = TrimDoubleQuote(os.Getenv("discord_admin_role"))
+	DiscordWebhookUrl        = TrimDoubleQuote(os.Getenv("discord_webhook_url"))
+	RconPort                 = TrimDoubleQuote(os.Getenv("rcon_port"))
+	RconPassword             = TrimDoubleQuote(os.Getenv("rcon_password"))
 
 	Log        []LogConfig
 	ChannelID  = ""
@@ -66,11 +66,17 @@ func main() {
 		panic("log transfer config not found")
 	}
 
+	fmt.Println("=============== [Minecraft] ===============")
 	fmt.Println("Target Server       :", *ServerName)
 	fmt.Println("Server Directory    :", ServerDir)
 	fmt.Println("Backup Directory    :", BackupDir)
+	fmt.Println("=============== [Discord] ===============")
 	fmt.Println("Discord Bot Token   :", DiscordBotToken)
 	fmt.Println("Discord Webhook URL :", DiscordWebhookUrl)
+	fmt.Println("=============== [Server Control] ===============")
+	fmt.Println("SSH Login           :", fmt.Sprintf("%s@localhost:%s", SshUser, SshPort))
+	fmt.Println("Rcon Login Port     :", RconPort)
+	fmt.Println("Rcon Login Password :", RconPassword)
 
 	// 呼び出し
 	go tailLog()
@@ -333,4 +339,10 @@ func regexpReplace(src, rep, reg string) string {
 
 func Pinter(n int64) *int64 {
 	return &n
+}
+
+func TrimDoubleQuote(s string) string {
+	s = strings.TrimPrefix(s, "\"")
+	s = strings.TrimSuffix(s, "\"")
+	return s
 }
