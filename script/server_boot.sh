@@ -25,7 +25,7 @@ if [ "$(docker ps -a | grep "${SERVER_NAME}_mc")" == "" ]; then
 
   # Java Image Check
   if [ "$(docker images mc_java:${java})" == "" ]; then
-    echo "[Error]: Docker image has not found: `mc_java:${java}`"
+    echo "[Error]: Docker image has not found: \`mc_java:${java}\`"
     exit 0
   fi
 
