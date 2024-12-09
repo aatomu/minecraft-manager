@@ -145,11 +145,6 @@ func sendServerStatus(command string) {
 		})
 
 	case "server_stopping":
-		time.Sleep(5 * time.Second)
-
-		if IsServerBooted() {
-			return
-		}
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
@@ -160,14 +155,23 @@ func sendServerStatus(command string) {
 		})
 
 	case "server_stopped":
-		SendWebhook(discordgo.WebhookParams{
-			Embeds: []*discordgo.MessageEmbed{
-				{
-					Color: ColorError,
-					Title: "Minecraft server stopped",
+		for try := 0; try < 10; try++ {
+			// Server status check
+			if IsServerBooted() {
+				time.Sleep(time.Duration(try) * 100 * time.Millisecond)
+				continue
+			}
+
+			// When server has down
+			SendWebhook(discordgo.WebhookParams{
+				Embeds: []*discordgo.MessageEmbed{
+					{
+						Color: ColorError,
+						Title: "Minecraft server stopped",
+					},
 				},
-			},
-		})
+			})
+		}
 	}
 }
 func serverStart() {
