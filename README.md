@@ -146,13 +146,13 @@ DiscordBot には以下の権限が必要です
   - [x] bot
     - General Permissions
       - [x] Manage Webhooks
-      - [x] Read Messages/View Channels
+      - [x] View Channels
     - Text Permissions
       _ [x] Send Messages
       _ [x] Embed Links
       _ [x] Attach Files
       _ [x] Read Message History
-      [x] applications.commands
+  - [x] applications.commands
 
 招待リンク `https://discord.com/api/oauth2/authorize?client_id=<Your Bot Client ID>&permissions=536988672&scope=bot%20applications.commands`
 以上で Bot 編は終わりです。
