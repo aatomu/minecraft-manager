@@ -83,10 +83,7 @@ func main() {
 	//--------------Bot本体--------------
 	if DiscordBotToken != "" {
 		//bot起動準備
-		discord, err := discordgo.New("Bot " + DiscordBotToken)
-		if err != nil {
-			panic(err)
-		}
+		discord, _ := discordgo.New("Bot " + DiscordBotToken)
 
 		//eventトリガー設定
 		discord.AddHandler(onReady)
@@ -94,8 +91,9 @@ func main() {
 		discord.AddHandler(onInteractionCreate)
 
 		//起動
-		err = discord.Open()
+		err := discord.Open()
 		if err != nil {
+			PrintLog(ManagerError, "Discord bot authentication failed/Connect to Discord failed")
 			panic(err)
 		}
 
@@ -123,6 +121,7 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 	URL, _ := url.Parse(DiscordWebhookUrl)
 	webhook, err := discord.Webhook(strings.Split(URL.Path, "/")[3])
 	if err != nil {
+		PrintLog(ManagerError, "Webhook parse error/Webhook permission denied?")
 		panic(err)
 	}
 	ChannelID = webhook.ChannelID
