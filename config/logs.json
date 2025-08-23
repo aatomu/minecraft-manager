@@ -95,9 +95,9 @@
       "\\[.+?\\] \\[Server thread/INFO\\].*?: (.*from the whitelist.*)",
       "\\[.+?\\] \\[Server thread/INFO\\].*?: (.*\\[Server\\] .*)",
       "\\[.+?\\] \\[Server thread/INFO\\].*?: (.*\\[Rcon\\] .*)",
-      "\\[.+?\\] \\[Server thread/INFO\\].*?: (.{3,20}) (lost connection: Server closed)",
-      "\\[.+?\\] \\[Server thread/INFO\\].*?: (.{3,20}) (lost connection: Timed out)",
-      "\\[.+?\\] \\[Server thread/INFO\\].*?: (.{3,20}) (lost connection: You logged in from another location)"
+      "\\[.+?\\] \\[Server thread/INFO\\].*?: (.{3,20} lost connection: Server closed)",
+      "\\[.+?\\] \\[Server thread/INFO\\].*?: (.{3,20} lost connection: Timed out)",
+      "\\[.+?\\] \\[Server thread/INFO\\].*?: (.{3,20} lost connection: You logged in from another location)"
     ],
     "action": "bypass"
   }
