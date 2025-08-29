@@ -168,12 +168,22 @@ func sendServerStatus(command string) {
 			SendWebhook(discordgo.WebhookParams{
 				Embeds: []*discordgo.MessageEmbed{
 					{
-						Color: ColorError,
+						Color: ColorSuccess,
 						Title: "Minecraft server stopped",
 					},
 				},
 			})
+			return
 		}
+		SendWebhook(discordgo.WebhookParams{
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       ColorError,
+					Title:       "failed to stop Minecraft server",
+					Description: "Please check log"},
+			},
+		})
+
 	}
 }
 func serverStart() {
