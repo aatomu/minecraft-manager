@@ -38,6 +38,7 @@ func tailLog() {
 				firstRead = false
 			}
 			defer f.Close()
+			PrintLog(ManagerStandard, "Monitoring new latest.log")
 
 			// Check File Events
 			changeFile := make(chan bool)
@@ -47,6 +48,7 @@ func tailLog() {
 					event := <-watcher.Events
 					switch {
 					case event.Name == logFilePath && event.Op == fsnotify.Rename:
+						PrintLog(ManagerStandard, "Detected renaming of latest.log. Removing current monitoring.")
 						changeFile <- true
 						return
 					case event.Op == fsnotify.Write:
