@@ -217,15 +217,15 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 		return
 	}
 
+	// チャンネル確認
+	if i.ChannelID != ChannelID {
+		return
+	}
+
 	PrintLog(CommandStandard, fmt.Sprintf("User:%s(<@%s>) Operation:\"%s\"", i.User.String(), i.User.ID, i.Command.Name))
 	// 権限確認
 	ok, err := disgord.HaveRole(discord, iData.GuildID, i.User.ID, DiscordAdminRole)
 	if !ok || err != nil {
-		return
-	}
-
-	// チャンネル確認
-	if i.ChannelID != ChannelID {
 		return
 	}
 
