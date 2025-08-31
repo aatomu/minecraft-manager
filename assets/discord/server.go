@@ -46,12 +46,15 @@ func tailLog() {
 			go func() {
 				for {
 					event := <-watcher.Events
+					if event.Name != logFilePath {
+						continue
+					}
 					switch {
-					case event.Name == logFilePath && event.Op == fsnotify.Rename:
-						PrintLog(ManagerStandard, "Detected renaming of latest.log. Removing current monitoring.")
+					case event.Has(fsnotify.Create):
+						PrintLog(ManagerStandard, "Detected creation of a new latest.log. Removing current monitoring.")
 						changeFile <- true
 						return
-					case event.Op == fsnotify.Write:
+					case event.Has(fsnotify.Write):
 						isWroteFile <- true
 					}
 				}
