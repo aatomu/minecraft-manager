@@ -35,6 +35,7 @@ var (
 	SshUser                  = TrimDoubleQuote(os.Getenv("ssh_user"))
 	SshPort                  = TrimDoubleQuote(os.Getenv("ssh_port"))
 	ScriptBoot               = TrimDoubleQuote(os.Getenv("script_boot"))
+	ScriptKill               = TrimDoubleQuote(os.Getenv("script_kill"))
 	ScriptBackup             = TrimDoubleQuote(os.Getenv("script_backup"))
 	ScriptBackupRsyncArg     = TrimDoubleQuote(os.Getenv("script_backup_rsync_arg"))
 	ScriptBackupRsyncCommand = TrimDoubleQuote(os.Getenv("script_backup_rsync_command"))
@@ -138,6 +139,12 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 			Type:                     discordgo.ChatApplicationCommand,
 			Name:                     "stop",
 			Description:              "サーバーを停止します",
+			DefaultMemberPermissions: Pinter(discordgo.PermissionViewChannel),
+		},
+		{
+			Type:                     discordgo.ChatApplicationCommand,
+			Name:                     "kill",
+			Description:              "サーバーを強制停止します",
 			DefaultMemberPermissions: Pinter(discordgo.PermissionViewChannel),
 		},
 		{
@@ -283,6 +290,31 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 			},
 		})
 		go serverStop()
+
+	case "kill":
+		if !IsServerBooted() {
+			res.Reply(&discordgo.InteractionResponseData{
+				Embeds: []*discordgo.MessageEmbed{
+					{
+						Color: ColorError,
+						Title: "Server has not running",
+					},
+				},
+				Flags: discordgo.MessageFlagsEphemeral,
+			})
+			return
+		}
+
+		res.Reply(&discordgo.InteractionResponseData{
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       ColorSuccess,
+					Title:       "Server kill command called",
+					Description: "Please wait...",
+				},
+			},
+		})
+		go serverKill()
 
 	case "backup":
 		res.Reply(&discordgo.InteractionResponseData{

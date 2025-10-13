@@ -212,6 +212,25 @@ func serverStop() {
 	sendCmd("stop")
 }
 
+func serverKill() {
+	// MC停止
+	sendCmd("say Server kill has been called, will stop in 10 seconds.")
+	time.Sleep(10 * time.Second)
+	b, err := sshCommand(fmt.Sprintf("%s %s", ScriptKill, *ServerName)).CombinedOutput()
+	if err != nil {
+		SendWebhook(discordgo.WebhookParams{
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       ColorError,
+					Title:       "Server kill script execution failed",
+					Description: "Please check log",
+				},
+			},
+		})
+		PrintLog(CommandError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
+	}
+}
+
 func serverBackup() {
 	sendCmd("save-off")
 	sendCmd("save-all flush")
