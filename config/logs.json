@@ -24,12 +24,12 @@
     "command": "server_stopping"
   },
   {
-    "comment": "サーバー停止/ワールド保存",
+    "comment": "ワールド保存",
     "regexp": [
       "\\[.+?\\] \\[Server thread/INFO\\].*?: ThreadedAnvilChunkStorage: (All dimensions are saved)"
     ],
     "action": "bypass",
-    "command": "server_stopped"
+    "command": "server_save"
   },
   {
     "comment": "Join",

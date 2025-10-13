@@ -158,37 +158,31 @@ func sendServerStatus(command string) {
 				},
 			},
 		})
-
-	case "server_stopped":
-		for try := 0; try < 10; try++ {
-			// Server status check
-			if IsServerBooted() {
-				time.Sleep(time.Duration(try) * 100 * time.Millisecond)
-				continue
-			}
-
-			// When server has down
-			SendWebhook(discordgo.WebhookParams{
-				Embeds: []*discordgo.MessageEmbed{
-					{
-						Color: ColorSuccess,
-						Title: "Minecraft server stopped",
-					},
-				},
-			})
-			return
+		for IsServerBooted() {
+			time.Sleep(5 * time.Second)
 		}
+		// When server has down
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Color:       ColorError,
-					Title:       "failed to stop Minecraft server",
-					Description: "Please check log"},
+					Color: ColorSuccess,
+					Title: "Minecraft server stopped",
+				},
 			},
 		})
 
+	case "server_save":
+		SendWebhook(discordgo.WebhookParams{
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color: ColorSuccess,
+					Title: "Minecraft server saved",
+				},
+			},
+		})
 	}
 }
+
 func serverStart() {
 	b, err := sshCommand(fmt.Sprintf("%s %s", ScriptBoot, *ServerName)).CombinedOutput()
 	if err != nil {
