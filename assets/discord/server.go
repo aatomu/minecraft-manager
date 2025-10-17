@@ -98,25 +98,25 @@ func logAnalyze(line string) {
 
 			switch logConfig.Action {
 			case "bypass":
-				match := reg.FindStringSubmatch(line) // $2:Message
+				match := Submatch(reg, line, 1, "") // $0: Message
 				SendWebhook(discordgo.WebhookParams{
-					Content: match[1],
+					Content: match[0],
 				})
 
 			case "player":
-				match := reg.FindStringSubmatch(line) // $1:MCID(unsafe) $2:Message
-				mcid := regexp.MustCompile(`([\w_]{3,16})`).FindStringSubmatch(match[1])
+				match := Submatch(reg, line, 2, "") // $0:MCID(unsafe) $1:Message
+				mcid := Submatch(regexp.MustCompile(`([\w_]{3,16})`), match[0], 1, "Steve")
 				SendWebhook(discordgo.WebhookParams{
-					Embeds: GetWebhookEmbed(mcid[1], fmt.Sprintf("%s %s", mcid[1], match[2])),
+					Embeds: GetWebhookEmbed(mcid[0], fmt.Sprintf("%s %s", mcid[0], match[1])),
 				})
 
 			case "message":
-				match := reg.FindStringSubmatch(line) // $1:MCID(unsafe) $2:Message
-				mcid := regexp.MustCompile(`([\w_]{3,16})`).FindStringSubmatch(match[1])
+				match := Submatch(reg, line, 2, "") // $0:MCID(unsafe) $1:Message
+				mcid := Submatch(regexp.MustCompile(`([\w_]{3,16})`), match[0], 1, "Steve")
 				SendWebhook(discordgo.WebhookParams{
-					Username:  mcid[1],
-					AvatarURL: "https://minotar.net/helm/" + mcid[1] + "/600",
-					Content:   match[2],
+					Username:  mcid[0],
+					AvatarURL: "https://minotar.net/helm/" + mcid[0] + "/600",
+					Content:   match[1],
 				})
 			}
 
@@ -125,6 +125,24 @@ func logAnalyze(line string) {
 			}
 		}
 	}
+}
+
+// return [$0:firstSubmatch, $1:secondSubmatch, ...]
+func Submatch(reg *regexp.Regexp, t string, req int, dummy string) []string {
+	match := reg.FindStringSubmatch(t)
+
+	if match == nil {
+		match = make([]string, req+1)
+		for i := 1; i <= req; i++ {
+			match[i] = dummy
+		}
+	} else {
+		for len(match) <= req {
+			match = append(match, dummy)
+		}
+	}
+
+	return match[1:]
 }
 
 func sendServerStatus(command string) {
