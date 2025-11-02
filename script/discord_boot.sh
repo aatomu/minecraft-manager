@@ -17,7 +17,7 @@ fi
 # 新規ビルド
 if [ "$(docker images | grep "mc_chat")" == "" ]; then
   echo "[INFO]: Build start docker image: \`mc_chat:latest\`"
-  docker build --no-cache -f ../docker/bot.dockerfile -t mc_chat:latest ../
+  docker build --no-cache -f ../docker/bot.Dockerfile --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" -t mc_chat:latest ../
   echo "[INFO]: Build end docker image: \`mc_chat:latest\`"
 
   exit 0
