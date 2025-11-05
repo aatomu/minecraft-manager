@@ -1,46 +1,64 @@
-# javaを指定
 ARG JAVA=21
-FROM eclipse-temurin:${JAVA} AS jdk
+# MARK: Manager compile
+FROM golang:1.25.3-alpine AS manager
 
-# ubuntuに設定
-FROM ubuntu
+WORKDIR /app
 
-# 引き取り変数
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY *.go ./
+RUN CGO=ENABLED=0 go build -o /manager -ldflags "-s -w" ./
+
+# MARK: Java resources
+ARG JAVA
+FROM eclipse-temurin:${JAVA}-jdk-alpine AS jdk
+
+# MARK: Base image
+FROM alpine:latest
+
+#> Arguments
 ARG USER_NAME=minecraft
 ARG GROUP_NAME=minecraft
 ARG UID=1000
 ARG GID=1000
 
-# JDKインストール
+#> Copy manager
+COPY --from=manager --chown=${UID}:${GID} /manager ./usr/local/bin/
+#> Copy java resource
 ENV JAVA_HOME=/opt/java/openjdk
-COPY --from=jdk $JAVA_HOME $JAVA_HOME
+COPY --from=jdk --chown=${UID}:${GID} ${JAVA_HOME} ${JAVA_HOME}
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
-# TimeZoneの指定
-ENV DEBIAN_FRONTEND=noninteractive
+
+#> Set Timezone
 ENV TZ=Asia/Tokyo
-ENV LANG=ja_JP.UTF-8
 
-# /MCをマウント
-VOLUME /MC
-# 権限変更
-RUN mkdir /MC \
-  && chmod 777 /MC \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends \
-  tzdata \
-  locales \
-  language-pack-ja-base language-pack-ja \
-  && apt-get -y clean \
-  && rm -rf /var/lib/apt/lists/* \
-  && groupadd --force -g $GID $GROUP_NAME \
-  && useradd --non-unique -u $UID -g $GID $USER_NAME
+#> Scripts
+# 1. install packages
+# 2. add group
+# 3. add user
+RUN apk update \
+  && apk add --no-cache tzdata shadow \
+  && groupadd --force -g ${GID} ${GROUP_NAME} \
+  && useradd -o -M -u ${UID} -g ${GID} ${USER_NAME} \
+  && mkdir /resource \
+  && chown -R ${USER_NAME}:${GROUP_NAME} /resource
 
+#> Mount volume
+VOLUME /resource
+#> Change work dir
+WORKDIR /resource
+#> Change work user
+USER ${USER_NAME}
 
-# 作業ディレクトリを変更
-WORKDIR /MC
-# User名 変更
-USER minecraft
+#> Expose port
+# Minecraft
+EXPOSE 25565/tcp
+# Minecraft rcon
+EXPOSE 25575/tcp
+# Simple voice chat
+EXPOSE 24454/udp
+# JVM manager
+EXPOSE 80
 
-# 起動
-ENTRYPOINT ["java"]
-CMD ["-Xmx2G","-jar","./server.jar"]
+ENTRYPOINT ["/usr/local/bin/manager"]
