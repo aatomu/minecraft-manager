@@ -47,12 +47,6 @@ func getGenerationByTime() ([]string, error) {
 }
 
 func backup(w http.ResponseWriter, r *http.Request) {
-	if jvm != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("JVM is already working,"))
-		return
-	}
-
 	args := []string{
 		"-avhP",
 		"--delete",
@@ -81,10 +75,47 @@ func backup(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.Info("Backup rsync succeeded", "output", string(out))
 
-	if len(gen) > (keepGenerations - 1) {
-		os.Remo
+	err = clearOldGeneration()
+	if err != nil {
+		logger.Error("Remove old generation failed", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
 	}
+	w.WriteHeader(http.StatusOK)
+
+	return
+}
+
+func clearOldGeneration() error {
+	gen, err := getGenerationByTime()
+	if err != nil {
+		return err
+	}
+
+	if len(gen) <= keepGenerations {
+		return nil
+	}
+
+	sort.Strings(gen)
+
+	for _, fullPath := range gen[:len(gen)-keepGenerations] {
+		logger.Info("Deleting old generation", "path", fullPath)
+		if err := os.RemoveAll(fullPath); err != nil {
+			logger.Error("Failed to delete old generation", "path", fullPath, "error", err)
+		}
+	}
+	return nil
 }
 
 func restore(w http.ResponseWriter, r *http.Request) {
+	if jvm != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("JVM is already working,"))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	return
 }
