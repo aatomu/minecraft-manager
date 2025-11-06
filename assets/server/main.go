@@ -86,14 +86,9 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// Start jvm
-	if err := ServerUp(); err != nil {
-		logger.Error("Failed to auto-start JVM", "error", err)
-		os.Exit(1)
-	}
-
 	// Start http Server
 	http.Handle("/state", middleware(http.HandlerFunc(ServerState)))
+	http.Handle("/up", middleware(http.HandlerFunc(ServerUp)))
 	http.Handle("/down", middleware(http.HandlerFunc(ServerDown)))
 	http.Handle("/exec", middleware(http.HandlerFunc(ServerExec)))
 	http.Handle("/tail", middleware(websocket.Handler(ServerTail)))
@@ -168,9 +163,11 @@ func ServerState(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func ServerUp() error {
+func ServerUp(w http.ResponseWriter, r *http.Request) {
 	if jvm != nil {
-		return nil
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("JVM is already working,"))
+		return
 	}
 
 	cmd := exec.Command("java", jvmArgs...)
@@ -178,7 +175,9 @@ func ServerUp() error {
 	var err error
 	jvmIn, err = cmd.StdinPipe()
 	if err != nil {
-		return err
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	jo, _ := cmd.StdoutPipe()
@@ -186,11 +185,14 @@ func ServerUp() error {
 
 	err = cmd.Start()
 	if err != nil {
-		return err
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	jvm = cmd.Process
 	logger.Info("JVM process started successfully", "pid", jvm.Pid, "args", jvmArgs)
+	w.WriteHeader(http.StatusOK)
 
 	go func(p *os.Process) {
 		state, err := p.Wait()
@@ -218,7 +220,8 @@ func ServerUp() error {
 			logger.Error("JVM output read error", "error", err)
 		}
 	}()
-	return nil
+
+	return
 }
 
 func ServerExec(w http.ResponseWriter, r *http.Request) {
@@ -234,7 +237,9 @@ func ServerExec(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
+
 	return
 }
 
@@ -251,7 +256,9 @@ func ServerDown(w http.ResponseWriter, r *http.Request) {
 	} else {
 		jvm.Signal(os.Kill)
 	}
+
 	w.WriteHeader(http.StatusAccepted)
+
 	return
 }
 
@@ -273,4 +280,6 @@ func ServerTail(ws *websocket.Conn) {
 			return
 		}
 	}
+
+	return
 }
