@@ -2,12 +2,15 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"golang.org/x/net/websocket"
 )
@@ -30,6 +33,7 @@ var (
 	}))
 
 	jvm         *os.Process    = nil
+	jvmArgs     []string       = os.Args[1:]
 	jvmIn       io.WriteCloser = nil
 	broadcaster *Broadcaster
 )
@@ -74,19 +78,85 @@ func (b *Broadcaster) Run() {
 }
 
 func main() {
+	// Broadcast streams
 	broadcaster = NewBroadcaster()
 	go broadcaster.Run()
 
-	http.HandleFunc("/state", ServerState)
-	http.HandleFunc("/up", ServerUp)
-	http.HandleFunc("/down", ServerDown)
-	http.HandleFunc("/exec", ServerExec)
-	http.Handle("/tail", websocket.Handler(ServerTail))
+	// Graceful Shutdown
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	err := http.ListenAndServe("0.0.0.0:80", nil)
-	if err != nil {
-		panic(err)
+	// Start jvm
+	if err := ServerUp(); err != nil {
+		logger.Error("Failed to auto-start JVM", "error", err)
+		os.Exit(1)
 	}
+
+	// Start http Server
+	http.Handle("/state", middleware(http.HandlerFunc(ServerState)))
+	http.Handle("/down", middleware(http.HandlerFunc(ServerDown)))
+	http.Handle("/exec", middleware(http.HandlerFunc(ServerExec)))
+	http.Handle("/tail", middleware(websocket.Handler(ServerTail)))
+
+	server := &http.Server{Addr: "0.0.0.0:80"}
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			logger.Error("HTTP server failed to start", "error", err)
+		}
+	}()
+
+	// Wait signal
+	<-ctx.Done()
+	logger.Info("Shutting down gracefully, sending signal to JVM...")
+
+	// Cleanup jvm
+	if jvm != nil {
+		// Try normal termination(SIGINT)
+		jvm.Signal(os.Interrupt)
+
+		// Waiting...
+		select {
+		case <-time.After(3 * time.Second):
+			if jvm != nil {
+				logger.Warn("JVM did not terminate gracefully, sending SIGKILL.")
+				jvm.Signal(os.Kill)
+			}
+		}
+	}
+
+	// Stop http server
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(timeoutCtx); err != nil {
+		logger.Error("HTTP server forced to shutdown", "error", err)
+	}
+
+	logger.Info("Manager program finished.")
+}
+
+func middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 1. IPアドレスの取得
+		// 標準的なRemoteAddrを使用。プロキシ経由の場合は X-Forwarded-For などのヘッダも確認すべき。
+		ip := r.RemoteAddr
+
+		// 2. HTTPメソッドの取得
+		method := r.Method
+
+		// 3. リクエストURIの取得
+		uri := r.RequestURI
+
+		// 💡 slog で情報をログに記録
+		logger.Info("HTTP request received",
+			slog.String("ip", ip),
+			slog.String("method", method),
+			slog.String("uri", uri))
+
+		// 次のハンドラ（オリジナルの関数）を呼び出す
+		next.ServeHTTP(w, r)
+	})
 }
 
 func ServerState(w http.ResponseWriter, r *http.Request) {
@@ -98,29 +168,29 @@ func ServerState(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func ServerUp(w http.ResponseWriter, r *http.Request) {
+func ServerUp() error {
 	if jvm != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("JVM is already working,"))
-		return
+		return nil
 	}
 
-	requestCmd := r.URL.Query().Get("cmd")
-	cmd := exec.Command("java", strings.Split(requestCmd, " ")...)
+	cmd := exec.Command("java", jvmArgs...)
 
-	jvmIn, _ = cmd.StdinPipe()
+	var err error
+	jvmIn, err = cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+
 	jo, _ := cmd.StdoutPipe()
 	je, _ := cmd.StderrPipe()
 
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
+		return err
 	}
 
 	jvm = cmd.Process
-	w.WriteHeader(http.StatusOK)
+	logger.Info("JVM process started successfully", "pid", jvm.Pid, "args", jvmArgs)
 
 	go func(p *os.Process) {
 		state, err := p.Wait()
@@ -130,7 +200,9 @@ func ServerUp(w http.ResponseWriter, r *http.Request) {
 			logger.Info("JVM process has finished", "state", state.String())
 		}
 
-		jvmIn.Close()
+		if jvmIn != nil {
+			jvmIn.Close()
+		}
 		jvm = nil
 	}(jvm)
 
@@ -146,6 +218,7 @@ func ServerUp(w http.ResponseWriter, r *http.Request) {
 			logger.Error("JVM output read error", "error", err)
 		}
 	}()
+	return nil
 }
 
 func ServerExec(w http.ResponseWriter, r *http.Request) {
