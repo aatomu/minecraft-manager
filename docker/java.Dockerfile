@@ -24,7 +24,7 @@ ARG UID=1000
 ARG GID=1000
 
 #> Copy manager
-COPY --from=manager --chown=${UID}:${GID} /manager ./usr/local/bin/
+COPY --from=manager --chown=${UID}:${GID} /manager /usr/local/bin/
 #> Copy java resource
 ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=jdk --chown=${UID}:${GID} ${JAVA_HOME} ${JAVA_HOME}
