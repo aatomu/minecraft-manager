@@ -41,13 +41,15 @@ RUN apk update \
   && apk add --no-cache tzdata shadow rsync \
   && groupadd --force -g ${GID} ${GROUP_NAME} \
   && useradd -o -M -u ${UID} -g ${GID} ${USER_NAME} \
-  && mkdir /resource \
-  && chown -R ${USER_NAME}:${GROUP_NAME} /resource
+  && mkdir /mnt/resource \
+  && chown -R ${USER_NAME}:${GROUP_NAME} /mnt/resource \
+  && mkdir /mnt/backup \
+  && chown -R ${USER_NAME}:${GROUP_NAME} /mnt/backup
 
 #> Mount volume
-VOLUME /resource
+VOLUME /mnt/resource
 #> Change work dir
-WORKDIR /resource
+WORKDIR /mnt/resource
 #> Change work user
 USER ${USER_NAME}
 
