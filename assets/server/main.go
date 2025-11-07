@@ -35,8 +35,8 @@ var (
 	broadcastChannelBufferSize = getEnv("BROADCAST_BUFFER_SIZE", 50)
 	broadcaster                *Broadcaster
 	// Rsync
-	backupSource      = getEnv("SOURCE", "/resource/")
-	backupDestination = getEnv("DESTINATION", "/resource/backup/")
+	backupSource      = getEnv("SOURCE", "/mnt/resource/")
+	backupDestination = getEnv("DESTINATION", "/mnt/backup/")
 	keepGenerations   = getEnv("KEEP_GENERATIONS", 10)
 )
 

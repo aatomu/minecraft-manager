@@ -125,6 +125,7 @@ func restore(w http.ResponseWriter, r *http.Request) {
 
 	args := []string{
 		"-avhP",
+		"--delete",
 		restoreSourceDir + "/",
 		backupSource,
 	}
