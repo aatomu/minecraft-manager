@@ -2,6 +2,10 @@
 
 Docker/Discord を利用した Minecraft Manager
 
+1. GET `http://localhost:80/new_token` > return `id,key`
+2. generate hash `HMAC-SHA512(key,id+shared_key)` \
+   > `echo -n "${id}${SHA256(password)}" | openssl dgst -sha512 -mac HMAC -macopt hexkey:${key}`
+3. GET `http://localhost:80/state` Header: `Authorization: id:hash`
 注意:
 
 - 指示がなければ、`manager-container`がカレントディレクトリです
