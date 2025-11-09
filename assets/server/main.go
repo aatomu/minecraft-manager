@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -38,36 +40,17 @@ var (
 	backupSource      = getEnv("SOURCE", "/mnt/resource/")
 	backupDestination = getEnv("DESTINATION", "/mnt/backup/")
 	keepGenerations   = getEnv("KEEP_GENERATIONS", 10)
+	// API auth
+	password string
+	session  = SessionStore{
+		mu: sync.Mutex{},
+		s:  map[string][]byte{},
+	}
 )
 
-func getEnv[T float64 | int | bool | string](key string, defaultVal T) T {
-	valueStr := os.Getenv(key)
-
-	if valueStr == "" {
-		return defaultVal
-	}
-
-	switch any(defaultVal).(type) {
-	case string:
-		return any(valueStr).(T)
-
-	case bool:
-		if v, err := strconv.ParseBool(valueStr); err == nil {
-			return any(v).(T)
-		}
-
-	case int:
-		if v, err := strconv.ParseInt(valueStr, 10, 64); err == nil {
-			return any(v).(T)
-		}
-
-	case float64:
-		if v, err := strconv.ParseFloat(valueStr, 64); err == nil {
-			return any(v).(T)
-		}
-	}
-
-	return defaultVal
+type SessionStore struct {
+	mu sync.Mutex
+	s  map[string][]byte
 }
 
 type Broadcaster struct {
@@ -75,15 +58,6 @@ type Broadcaster struct {
 	unregister  chan chan string
 	subscribers map[chan string]bool
 	broadcast   chan string
-}
-
-func NewBroadcaster() *Broadcaster {
-	return &Broadcaster{
-		register:    make(chan chan string),
-		unregister:  make(chan chan string),
-		subscribers: make(map[chan string]bool),
-		broadcast:   make(chan string, broadcastChannelBufferSize),
-	}
 }
 
 func (b *Broadcaster) Run() {
@@ -110,6 +84,9 @@ func (b *Broadcaster) Run() {
 }
 
 func main() {
+	// REST API authentication
+	password = getEnv("password", "minecraft-server-manager")
+
 	// Broadcast streams
 	broadcaster = NewBroadcaster()
 	go broadcaster.Run()
@@ -119,13 +96,14 @@ func main() {
 	defer stop()
 
 	// Start http Server
-	http.Handle("/state", middleware(http.HandlerFunc(serverState)))
-	http.Handle("/up", middleware(http.HandlerFunc(serverUp)))
-	http.Handle("/down", middleware(http.HandlerFunc(serverDown)))
-	http.Handle("/exec", middleware(http.HandlerFunc(serverExec)))
-	http.Handle("/tail", middleware(websocket.Handler(serverTail)))
-	http.Handle("/backup", middleware(http.HandlerFunc(backup)))
-	http.Handle("/restore", middleware(http.HandlerFunc(restore)))
+	http.Handle("/new_token", middleware(http.HandlerFunc(newToken), false))
+	http.Handle("/state", middleware(http.HandlerFunc(serverState), true))
+	http.Handle("/up", middleware(http.HandlerFunc(serverUp), true))
+	http.Handle("/down", middleware(http.HandlerFunc(serverDown), true))
+	http.Handle("/exec", middleware(http.HandlerFunc(serverExec), true))
+	http.Handle("/tail", middleware(websocket.Handler(serverTail), true))
+	http.Handle("/backup", middleware(http.HandlerFunc(backup), true))
+	http.Handle("/restore", middleware(http.HandlerFunc(restore), true))
 
 	server := &http.Server{Addr: "0.0.0.0:80"}
 	go func() {
@@ -165,25 +143,83 @@ func main() {
 	logger.Info("Manager program finished.")
 }
 
-func middleware(next http.Handler) http.Handler {
+func getEnv[T float64 | int | bool | string](key string, defaultVal T) T {
+	valueStr := os.Getenv(key)
+
+	if valueStr == "" {
+		return defaultVal
+	}
+
+	switch any(defaultVal).(type) {
+	case string:
+		return any(valueStr).(T)
+
+	case bool:
+		if v, err := strconv.ParseBool(valueStr); err == nil {
+			return any(v).(T)
+		}
+
+	case int:
+		if v, err := strconv.ParseInt(valueStr, 10, 64); err == nil {
+			return any(v).(T)
+		}
+
+	case float64:
+		if v, err := strconv.ParseFloat(valueStr, 64); err == nil {
+			return any(v).(T)
+		}
+	}
+
+	return defaultVal
+}
+
+func NewBroadcaster() *Broadcaster {
+	return &Broadcaster{
+		register:    make(chan chan string),
+		unregister:  make(chan chan string),
+		subscribers: make(map[chan string]bool),
+		broadcast:   make(chan string, broadcastChannelBufferSize),
+	}
+}
+
+func middleware(next http.Handler, authRequest bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 1. IPアドレスの取得
-		// 標準的なRemoteAddrを使用。プロキシ経由の場合は X-Forwarded-For などのヘッダも確認すべき。
 		ip := r.RemoteAddr
-
-		// 2. HTTPメソッドの取得
 		method := r.Method
-
-		// 3. リクエストURIの取得
 		uri := r.RequestURI
 
-		// 💡 slog で情報をログに記録
+		if authRequest {
+			auth := r.Header.Get("Authorization")
+			split := strings.Split(auth, ":")
+
+			authorize := false
+			available := false
+			if len(split) == 2 {
+				available, authorize = verify(split[0], split[1])
+			}
+
+			logger.Info("HTTP request received",
+				slog.String("ip", ip),
+				slog.String("method", method),
+				slog.String("uri", uri),
+				slog.Bool("Available", available),
+				slog.Bool("Authorize", authorize))
+
+			if authorize {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
 		logger.Info("HTTP request received",
 			slog.String("ip", ip),
 			slog.String("method", method),
 			slog.String("uri", uri))
 
-		// 次のハンドラ（オリジナルの関数）を呼び出す
 		next.ServeHTTP(w, r)
+		return
 	})
 }
