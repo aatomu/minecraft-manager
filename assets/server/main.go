@@ -41,7 +41,7 @@ var (
 	backupDestination = getEnv("DESTINATION", "/mnt/backup/")
 	keepGenerations   = getEnv("KEEP_GENERATIONS", 10)
 	// API auth
-	password string
+	password = getEnv("password", "minecraft-server-manager")
 	session  = SessionStore{
 		mu: sync.Mutex{},
 		s:  map[string][]byte{},
@@ -84,9 +84,6 @@ func (b *Broadcaster) Run() {
 }
 
 func main() {
-	// REST API authentication
-	password = getEnv("password", "minecraft-server-manager")
-
 	// Broadcast streams
 	broadcaster = NewBroadcaster()
 	go broadcaster.Run()
