@@ -2,14 +2,18 @@ package main
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha512"
+	"encoding/hex"
 	"encoding/json"
-	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/aatomu/aatomlib/disgord"
@@ -30,61 +34,38 @@ const (
 )
 
 var (
-	ServerDir                = TrimDoubleQuote(os.Getenv("server_dir"))
-	BackupDir                = TrimDoubleQuote(os.Getenv("backup_dir"))
-	SshUser                  = TrimDoubleQuote(os.Getenv("ssh_user"))
-	SshPort                  = TrimDoubleQuote(os.Getenv("ssh_port"))
-	ScriptBoot               = TrimDoubleQuote(os.Getenv("script_boot"))
-	ScriptKill               = TrimDoubleQuote(os.Getenv("script_kill"))
-	ScriptBackup             = TrimDoubleQuote(os.Getenv("script_backup"))
-	ScriptBackupRsyncArg     = TrimDoubleQuote(os.Getenv("script_backup_rsync_arg"))
-	ScriptBackupRsyncCommand = TrimDoubleQuote(os.Getenv("script_backup_rsync_command"))
-	ScriptRestore            = TrimDoubleQuote(os.Getenv("script_restore"))
-	DiscordBotToken          = TrimDoubleQuote(os.Getenv("discord_bot_token"))
-	DiscordAdminRole         = TrimDoubleQuote(os.Getenv("discord_admin_role"))
-	DiscordWebhookUrl        = TrimDoubleQuote(os.Getenv("discord_webhook_url"))
-	RconPort                 = TrimDoubleQuote(os.Getenv("rcon_port"))
-	RconPassword             = TrimDoubleQuote(os.Getenv("rcon_password"))
+	Password       = getEnv("PASSWORD", "minecraft-server-manager")
+	Token          = getEnv("BOT_TOKEN", "")
+	AdminRoleId    = getEnv("ADMIN_ROLE_ID", "")
+	ReadChannelId  = getEnv("READ_CHANNEL_ID", "")
+	SendWebhookUrl = getEnv("SEND_WEBHOOK_URL", "")
 
-	Log        []LogConfig
-	ChannelID  = ""
-	ServerName = flag.String("name", "", "Monitoring Server Name")                 //! Required
-	LogDir     = flag.String("log-dir", "/logs", "Minecraft latest.log Directory") //* Not Required
-	ConfigDir  = flag.String("config-dir", "/config", "Config Directory")          //* Not Required
+	ManagerUrl = getEnv("MANAGER_URL", "http://server:80")
+	ConfigPath = getEnv("CONFIG_PATH", "/mnt/logs.json")
+
+	Log []LogConfig
 )
 
 func main() {
-	// Flag check
-	flag.Parse()
-	if *ServerName == "" {
-		panic("Required \"-name\" flag")
-	}
-
-	b, _ := os.ReadFile(filepath.Join(*ConfigDir, "logs.json"))
+	b, _ := os.ReadFile(filepath.Join(ConfigPath, "logs.json"))
 	json.Unmarshal(b, &Log)
 	if len(Log) == 0 {
 		panic("log transfer config not found")
 	}
 
-	PrintLog(ManagerStandard, "=============== [Minecraft] ===============")
-	PrintLog(ManagerStandard, fmt.Sprintf("Target Server       : %s", *ServerName))
-	PrintLog(ManagerStandard, fmt.Sprintf("Server Directory    : %s", ServerDir))
-	PrintLog(ManagerStandard, fmt.Sprintf("Backup Directory    : %s", BackupDir))
-	PrintLog(ManagerStandard, "=============== [Discord] ===============")
-	PrintLog(ManagerStandard, fmt.Sprintf("Discord Bot Token   : %s", DiscordBotToken))
-	PrintLog(ManagerStandard, fmt.Sprintf("Discord Webhook URL : %s", DiscordWebhookUrl))
-	PrintLog(ManagerStandard, "=============== [Server Control] ===============")
-	PrintLog(ManagerStandard, fmt.Sprintf("SSH Login           : %s@localhost:%s", SshUser, SshPort))
-	PrintLog(ManagerStandard, fmt.Sprintf("Rcon Login Port     : %s", RconPort))
-	PrintLog(ManagerStandard, fmt.Sprintf("Rcon Login Password : %s", RconPassword))
+	PrintLog(ManagerStandard, "=============== [Settings] ===============")
+	PrintLog(ManagerStandard, fmt.Sprintf("Discord Bot Token : %s", Token))
+	PrintLog(ManagerStandard, fmt.Sprintf("Admin Role ID     : %s", AdminRoleId))
+	PrintLog(ManagerStandard, fmt.Sprintf("Read Channel ID   : %s", ReadChannelId))
+	PrintLog(ManagerStandard, fmt.Sprintf("Send Webhook URL  : %s", SendWebhookUrl))
 	fmt.Print(strings.Repeat("\n", 5))
 
 	// 呼び出し
 	go tailLog()
 	//--------------Bot本体--------------
-	if DiscordBotToken != "" {
+	if Token != "" {
 		//bot起動準備
-		discord, _ := discordgo.New("Bot " + DiscordBotToken)
+		discord, _ := discordgo.New("Bot " + Token)
 
 		//eventトリガー設定
 		discord.AddHandler(onReady)
@@ -117,15 +98,14 @@ func main() {
 // Botの起動時に呼び出し
 func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 	//起動メッセージ
-	PrintLog(ManagerStandard, fmt.Sprintf("`%s` manager discord bot is ready.\n", *ServerName))
+	PrintLog(ManagerStandard, "discord bot is ready.")
 
-	URL, _ := url.Parse(DiscordWebhookUrl)
+	URL, _ := url.Parse(SendWebhookUrl)
 	webhook, err := discord.Webhook(strings.Split(URL.Path, "/")[3])
 	if err != nil {
 		PrintLog(ManagerError, "Webhook parse error/Webhook permission denied?")
 		panic(err)
 	}
-	ChannelID = webhook.ChannelID
 
 	// コマンド生成
 	disgord.InteractionCommandCreate(discord, webhook.GuildID, []*discordgo.ApplicationCommand{
@@ -172,7 +152,7 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 
 // Botがメッセージ受信時に呼び出し
 func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
-	if ChannelID != m.ChannelID {
+	if m.ChannelID != ReadChannelId {
 		return
 	}
 
@@ -190,7 +170,7 @@ func onMessageCreate(discord *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		if strings.HasPrefix(text, "\\") { // "\"から始まる
-			ok, _ := disgord.HaveRole(discord, m.GuildID, m.Author.ID, DiscordAdminRole)
+			ok, _ := disgord.HaveRole(discord, m.GuildID, m.Author.ID, AdminRoleId)
 			if ok { // 権限を持ってる
 				text = strings.Replace(text, "\\", "", 1)
 				sendCmd(text)
@@ -225,13 +205,13 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 	}
 
 	// チャンネル確認
-	if i.ChannelID != ChannelID {
+	if i.ChannelID != ReadChannelId {
 		return
 	}
 
 	PrintLog(CommandStandard, fmt.Sprintf("User:%s(<@%s>) Operation:\"%s\"", i.User.String(), i.User.ID, i.Command.Name))
 	// 権限確認
-	ok, err := disgord.HaveRole(discord, iData.GuildID, i.User.ID, DiscordAdminRole)
+	ok, err := disgord.HaveRole(discord, iData.GuildID, i.User.ID, AdminRoleId)
 	if !ok || err != nil {
 		return
 	}
@@ -346,7 +326,7 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 
 func SendWebhook(m discordgo.WebhookParams) {
 	b, _ := json.Marshal(m)
-	req, _ := http.NewRequest(http.MethodPost, DiscordWebhookUrl, bytes.NewBuffer(b))
+	req, _ := http.NewRequest(http.MethodPost, SendWebhookUrl, bytes.NewBuffer(b))
 	req.Header.Set("Content-Type", "application/json")
 	client := new(http.Client)
 	// Request送信
@@ -373,8 +353,64 @@ func Pinter(n int64) *int64 {
 	return &n
 }
 
-func TrimDoubleQuote(s string) string {
-	s = strings.TrimPrefix(s, "\"")
-	s = strings.TrimSuffix(s, "\"")
-	return s
+func getEnv[T float64 | int | bool | string](key string, defaultVal T) T {
+	valueStr := os.Getenv(key)
+
+	if valueStr == "" {
+		return defaultVal
+	}
+
+	switch any(defaultVal).(type) {
+	case string:
+		return any(valueStr).(T)
+
+	case bool:
+		if v, err := strconv.ParseBool(valueStr); err == nil {
+			return any(v).(T)
+		}
+
+	case int:
+		if v, err := strconv.ParseInt(valueStr, 10, 64); err == nil {
+			return any(v).(T)
+		}
+
+	case float64:
+		if v, err := strconv.ParseFloat(valueStr, 64); err == nil {
+			return any(v).(T)
+		}
+	}
+
+	return defaultVal
+}
+
+func getToken() (id, token string, err error) {
+	resp, err := http.Get(ManagerUrl + "/new_token")
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		err = fmt.Errorf("server error")
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	parts := strings.Split(strings.TrimSpace(string(body)), ",")
+	if len(parts) != 2 {
+		err = fmt.Errorf("invalid response format")
+		return
+	}
+	id = parts[0]
+	keyHex := parts[1]
+
+	key, _ := hex.DecodeString(keyHex)
+	mac := hmac.New(sha512.New, key)
+	mac.Write([]byte(id + Password))
+	token = hex.EncodeToString(mac.Sum(nil))
+	return
 }
