@@ -41,7 +41,7 @@ var (
 	backupDestination = getEnv("DESTINATION", "/mnt/backup/")
 	keepGenerations   = getEnv("KEEP_GENERATIONS", 10)
 	// API auth
-	password = getEnv("password", "minecraft-server-manager")
+	password = getEnv("PASSWORD", "minecraft-server-manager")
 	session  = SessionStore{
 		mu: sync.Mutex{},
 		s:  map[string][]byte{},
