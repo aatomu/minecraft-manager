@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 func newToken(w http.ResponseWriter, r *http.Request) {
@@ -15,8 +16,6 @@ func newToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/csv")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf("%s,%s", id, key)))
-	fmt.Println("Id:", id)
-	fmt.Println("Key:", key)
 }
 
 func newSession() (id, key string) {
@@ -37,6 +36,14 @@ func newSession() (id, key string) {
 	defer session.mu.Unlock()
 	session.s[id] = keyBuf
 
+	go func() {
+		session.mu.Lock()
+		defer session.mu.Unlock()
+
+		time.Sleep(1 * time.Minute)
+		delete(session.s, id)
+	}()
+
 	return
 }
 
@@ -47,7 +54,6 @@ func verify(id, hash string) (available, ok bool) {
 		session.mu.Unlock()
 	}()
 
-	fmt.Printf("Sessions: %#v\n", session.s)
 	key, ok := session.s[id]
 	if !ok {
 		return false, false
@@ -62,10 +68,5 @@ func verify(id, hash string) (available, ok bool) {
 		return true, false
 	}
 
-	fmt.Println("From", id+password)
-	fmt.Println("Calc:", expected)
-	fmt.Println("CalcH:", hex.EncodeToString(expected))
-	fmt.Println("Input:", actual)
-	fmt.Println("InputH:", hex.EncodeToString(actual))
 	return true, hmac.Equal(actual, expected)
 }
