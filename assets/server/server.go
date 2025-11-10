@@ -11,6 +11,11 @@ import (
 )
 
 func serverState(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	if jvm == nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
@@ -20,6 +25,11 @@ func serverState(w http.ResponseWriter, r *http.Request) {
 }
 
 func serverUp(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	if jvm != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("JVM is already working,"))
@@ -81,6 +91,11 @@ func serverUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func serverExec(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	if jvm == nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
@@ -100,6 +115,11 @@ func serverExec(w http.ResponseWriter, r *http.Request) {
 }
 
 func serverDown(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	if jvm == nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return

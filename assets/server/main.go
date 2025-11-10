@@ -93,14 +93,14 @@ func main() {
 	defer stop()
 
 	// Start http Server
-	http.Handle("/new_token", middleware(http.HandlerFunc(newToken), false))
-	http.Handle("/state", middleware(http.HandlerFunc(serverState), true))
-	http.Handle("/up", middleware(http.HandlerFunc(serverUp), true))
-	http.Handle("/down", middleware(http.HandlerFunc(serverDown), true))
-	http.Handle("/exec", middleware(http.HandlerFunc(serverExec), true))
-	http.Handle("/tail", middleware(websocket.Handler(serverTail), true))
-	http.Handle("/backup", middleware(http.HandlerFunc(backup), true))
-	http.Handle("/restore", middleware(http.HandlerFunc(restore), true))
+	http.Handle("/new_token", middleware(http.HandlerFunc(newToken), false)) // GET
+	http.Handle("/state", middleware(http.HandlerFunc(serverState), true))   // GET
+	http.Handle("/up", middleware(http.HandlerFunc(serverUp), true))         // POST
+	http.Handle("/exec", middleware(http.HandlerFunc(serverExec), true))     // POST
+	http.Handle("/down", middleware(http.HandlerFunc(serverDown), true))     // POST
+	http.Handle("/tail", middleware(websocket.Handler(serverTail), true))    // UPGRADE
+	http.Handle("/backup", middleware(http.HandlerFunc(backup), true))       // POST
+	http.Handle("/restore", middleware(http.HandlerFunc(restore), true))     // POST
 
 	server := &http.Server{Addr: "0.0.0.0:80"}
 	go func() {

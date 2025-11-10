@@ -12,6 +12,11 @@ import (
 )
 
 func backup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	args := []string{
 		"-avhP",
 		"--delete",
@@ -76,6 +81,11 @@ func clearOldGeneration() error {
 }
 
 func restore(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	if jvm != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("JVM is already working,"))
