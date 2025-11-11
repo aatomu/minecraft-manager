@@ -10,15 +10,15 @@ readonly CONFIG_DIR="$(cd ${SCRIPT_PATH}/../config ; echo ${PWD})"
 
 # Image delete
 if [ "${SERVER_NAME}" == "" ]; then
-  echo "[INFO]: Delete docker image: \`mc_chat:latest\`"
-  docker rmi mc_chat:latest
+  echo "[INFO]: Delete docker image: \`mc_chat:develop\`"
+  docker rmi mc_chat:develop
 fi
 
 # 新規ビルド
-if [ "$(docker images | grep "mc_chat")" == "" ]; then
-  echo "[INFO]: Build start docker image: \`mc_chat:latest\`"
-  docker build --no-cache -f ../docker/bot.Dockerfile --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" -t mc_chat:latest ../
-  echo "[INFO]: Build end docker image: \`mc_chat:latest\`"
+if [ "$(docker images | grep "mc_chat:develop")" == "" ]; then
+  echo "[INFO]: Build start docker image: \`mc_chat:develop\`"
+  docker build --no-cache -f ../docker/bot.Dockerfile --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" -t mc_chat:develop ../
+  echo "[INFO]: Build end docker image: \`mc_chat:develop\`"
 
   exit 0
 fi
@@ -37,7 +37,7 @@ source ../config/${SERVER_NAME}.env
 # Container check
 if [ "$(docker ps -a -q --filter name=^${SERVER_NAME}_chat | wc -l)" == "0" ]; then
   echo "[INFO]: Docker \`${SERVER_NAME}_chat\` container start"
-  docker run -itd --name ${SERVER_NAME}_chat -v ${SSH_IDENTITY}:/identity -v ${CONFIG_DIR}:/config -v ${server_dir}/logs:/logs --env-file="${CONFIG_DIR}/${SERVER_NAME}.env" --network=host mc_chat:latest --name="${SERVER_NAME}" 
+  docker run -itd --name ${SERVER_NAME}_chat -v ${SSH_IDENTITY}:/identity -v ${CONFIG_DIR}:/config -v ${server_dir}/logs:/logs --env-file="${CONFIG_DIR}/${SERVER_NAME}.env" --network=host mc_chat:develop --name="${SERVER_NAME}" 
 else
   echo "[INFO]: Docker \`${SERVER_NAME}_chat\` container stop"
   docker stop ${SERVER_NAME}_chat

@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/aatomu/aatomlib/disgord v0.0.0-20240219230240-dac1f72ebc71
 	github.com/bwmarrin/discordgo v0.27.1
-	github.com/fsnotify/fsnotify v1.6.0
+	golang.org/x/net v0.45.0
 )
 
 require (

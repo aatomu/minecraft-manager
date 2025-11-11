@@ -7,78 +7,63 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/fsnotify/fsnotify"
+	"golang.org/x/net/websocket"
 )
 
 func tailLog() {
-	token := getToken()
-	watcher, _ := fsnotify.NewWatcher()
-	watcher.Add(*LogDir)
-	defer watcher.Close()
-	var logFilePath = filepath.Join(*LogDir, "latest.log")
-	var firstRead = true
+	var id, token string
+	var err error
 
-	// Tailing Log File
+	// Loop until a token is successfully obtained
 	for {
-		func() {
-			// Open File
-			f, err := os.Open(logFilePath)
+		id, token, err = getToken()
+		if err == nil {
+			break
+		}
+		PrintLog(ManagerError, fmt.Sprintf("Failed to get token: %s. Retrying in 5 seconds...", err.Error()))
+		time.Sleep(5 * time.Second)
+	}
+
+	wsURL := strings.Replace(ManagerUrl, "http", "ws", 1) + "/tail"
+	config, err := websocket.NewConfig(wsURL, "http://localhost")
+	if err != nil {
+		// This is a configuration error, likely not recoverable by retrying.
+		PrintLog(ManagerError, fmt.Sprintf("Failed to create websocket config: %s", err.Error()))
+		return
+	}
+	config.Header.Set("Authorization", fmt.Sprintf("%s:%s", id, token))
+
+	for {
+		PrintLog(ManagerStandard, "Connecting to log stream...")
+		ws, err := websocket.DialConfig(config)
+		if err != nil {
+			PrintLog(ManagerError, fmt.Sprintf("Failed to connect to websocket: %s. Retrying in 5 seconds...", err.Error()))
+			time.Sleep(5 * time.Second)
+			continue // Retry connection
+		}
+
+		PrintLog(ManagerStandard, "Connected to log stream.")
+
+		reader := bufio.NewReader(ws)
+		for {
+			line, err := reader.ReadString('\n')
 			if err != nil {
-				return
-			}
-			if firstRead {
-				// Jump to EOF
-				f.Seek(0, 2)
-				firstRead = false
-			}
-			defer f.Close()
-			PrintLog(ManagerStandard, "Monitoring new latest.log")
-
-			// Check File Events
-			changeFile := make(chan bool)
-			isWroteFile := make(chan bool)
-			go func() {
-				for {
-					event := <-watcher.Events
-					if event.Name != logFilePath {
-						continue
-					}
-					switch {
-					case event.Has(fsnotify.Create):
-						PrintLog(ManagerStandard, "Detected creation of a new latest.log. Removing current monitoring.")
-						changeFile <- true
-						return
-					case event.Has(fsnotify.Write):
-						isWroteFile <- true
-					}
+				if err != io.EOF {
+					PrintLog(ManagerError, fmt.Sprintf("Websocket read error: %s", err.Error()))
 				}
-			}()
-
-			// Read File
-			reader := bufio.NewReader(f)
-			for {
-				line, err := reader.ReadString('\n')
-				if err != nil {
-					if err == io.EOF { // End Of File
-						select {
-						case <-changeFile:
-							return
-						case <-isWroteFile:
-							continue
-						}
-					}
-					return
-				}
-				logAnalyze(strings.Trim(line, "\n"))
+				break // Reconnect on any error
 			}
-		}()
+			logAnalyze(line)
+		}
+
+		ws.Close()
+		PrintLog(ManagerStandard, "Disconnected from log stream. Reconnecting...")
+		time.Sleep(1 * time.Second) // Shorter delay for reconnection
 	}
 }
 
