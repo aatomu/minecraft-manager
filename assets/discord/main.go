@@ -11,13 +11,14 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/aatomu/aatomlib/disgord"
-	"github.com/aatomu/aatomlib/utils"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -92,7 +93,9 @@ func main() {
 	}
 
 	//停止対策
-	<-utils.BreakSignal()
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	<-sc
 }
 
 // Botの起動時に呼び出し
