@@ -417,3 +417,21 @@ func getToken() (id, token string, err error) {
 	token = hex.EncodeToString(mac.Sum(nil))
 	return
 }
+
+func APIPost(entorypoint string) error {
+	id, token, err := getToken()
+	if err != nil {
+		return fmt.Errorf("getToken() err:%v", err)
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, entorypoint, nil)
+	req.Header.Set("Authorization", fmt.Sprintf("%s:%s", id, token))
+
+	client := &http.Client{}
+	_, err = client.Do(req)
+	if err != nil {
+		return fmt.Errorf("POST \"%s\" err:%v", entorypoint, err)
+	}
+
+	return nil
+}

@@ -5,19 +5,20 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/aatomu/aatomlib/rcon"
 	"github.com/bwmarrin/discordgo"
 	"github.com/fsnotify/fsnotify"
 )
 
 func tailLog() {
+	token := getToken()
 	watcher, _ := fsnotify.NewWatcher()
 	watcher.Add(*LogDir)
 	defer watcher.Close()
@@ -202,89 +203,131 @@ func sendServerStatus(command string) {
 }
 
 func serverStart() {
-	b, err := sshCommand(fmt.Sprintf("%s %s", ScriptBoot, *ServerName)).CombinedOutput()
+	err := APIPost(ManagerUrl + "/up")
 	if err != nil {
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
 					Color:       ColorError,
-					Title:       "Server boot script execution failed",
-					Description: "Please check log",
+					Title:       "Server up execution failed",
+					Description: "Failed fetch server",
 				},
 			},
 		})
-		PrintLog(CommandError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
+		PrintLog(CommandError, fmt.Sprintf("serverStart() failed\n%s", err.Error()))
 	}
 }
 
 func serverStop() {
-	// MC停止
-	sendCmd("say Server shutdown has been called, will stop in 10 seconds.")
-	time.Sleep(10 * time.Second)
-	sendCmd("stop")
-}
-
-func serverKill() {
-	// MC停止
-	sendCmd("say Server kill has been called, will stop in 10 seconds.")
-	time.Sleep(10 * time.Second)
-	b, err := sshCommand(fmt.Sprintf("%s %s", ScriptKill, *ServerName)).CombinedOutput()
+	err := APIPost(ManagerUrl + "/exec?input=" + url.QueryEscape("say Server shutdown has been called, will stop in 10 seconds."))
 	if err != nil {
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
 					Color:       ColorError,
-					Title:       "Server kill script execution failed",
-					Description: "Please check log",
+					Title:       "Server stop annonce execution failed",
+					Description: "Failed fetch server",
 				},
 			},
 		})
-		PrintLog(CommandError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
+		PrintLog(CommandError, fmt.Sprintf("serverStop() failed\n%s", err.Error()))
+		return
+	}
+
+	time.Sleep(10 * time.Second)
+
+	err = APIPost(ManagerUrl + "/exec?input=" + url.QueryEscape("stop"))
+	if err != nil {
+		SendWebhook(discordgo.WebhookParams{
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       ColorError,
+					Title:       "Server stop execution failed",
+					Description: "Failed fetch server",
+				},
+			},
+		})
+		PrintLog(CommandError, fmt.Sprintf("serverStop() failed\n%s", err.Error()))
+		return
+	}
+}
+
+func serverKill() {
+	APIPost(ManagerUrl + "/exec?input=" + url.QueryEscape("say Server shutdown has been called, will stop in 10 seconds."))
+	time.Sleep(10 * time.Second)
+
+	err := APIPost(ManagerUrl + "/down?force")
+	if err != nil {
+		SendWebhook(discordgo.WebhookParams{
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Color:       ColorError,
+					Title:       "Server kill execution failed",
+					Description: "Failed fetch server",
+				},
+			},
+		})
+		PrintLog(CommandError, fmt.Sprintf("serverStop() failed\n%s", err.Error()))
+		return
 	}
 }
 
 func serverBackup() {
-	sendCmd("save-off")
-	sendCmd("save-all flush")
-	b, err := sshCommand(fmt.Sprintf("%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"", ScriptBackup, ServerDir, BackupDir, ScriptBackupRsyncArg, ScriptBackupRsyncCommand, DiscordWebhookUrl)).CombinedOutput()
+	APIPost(ManagerUrl + "/exec?input=" + url.QueryEscape("save-off"))
+	APIPost(ManagerUrl + "/exec?input=" + url.QueryEscape("save-all flush"))
+	time.Sleep(30 * time.Second)
+
+	err := APIPost(ManagerUrl + "/backup")
 	if err != nil {
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
 					Color:       ColorError,
-					Title:       "Server backup script execution failed",
+					Title:       "Server backup execution failed",
 					Description: "Please check log",
 				},
 			},
 		})
-		PrintLog(CommandError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
+		PrintLog(CommandError, fmt.Sprintf("backup API failed\n%s", err.Error()))
 	}
-	sendCmd("save-on")
+	APIPost(ManagerUrl + "/exec?input=" + url.QueryEscape("save-on"))
 }
 
 func serverRestore(timestamp string) {
-	b, err := sshCommand(fmt.Sprintf("%s \"%s\" \"%s\" \"%s\" \"%s\"", ScriptRestore, ServerDir, BackupDir, timestamp, DiscordWebhookUrl)).CombinedOutput()
+	err := APIPost(ManagerUrl + "/restore?t=" + url.QueryEscape(timestamp))
 	if err != nil {
 		SendWebhook(discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
 					Color:       ColorError,
-					Title:       "Server restore script execution failed",
+					Title:       "Server restore execution failed",
 					Description: "Please check log",
 				},
 			},
 		})
-		PrintLog(CommandError, fmt.Sprintf("code:%s\n%s", err.Error(), string(b)))
+		PrintLog(CommandError, fmt.Sprintf("restore API failed\n%s", err.Error()))
 	}
 }
 
 // 鯖確認
 func IsServerBooted() (isBooted bool) {
-	out, err := getCommand(fmt.Sprintf("ssh -o LogLevel=quiet -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p %s -i /identity %s@localhost %s", SshPort, SshUser, fmt.Sprintf("docker ps -a -q --filter name=^%s_mc", *ServerName))).CombinedOutput()
+	id, token, err := getToken()
 	if err != nil {
-		return true
+		PrintLog(CommandError, fmt.Sprintf("getToken() err:%s", err.Error()))
+		return false
 	}
-	return len(out) != 0
+
+	req, _ := http.NewRequest(http.MethodGet, ManagerUrl+"/state", nil)
+	req.Header.Set("Authorization", fmt.Sprintf("%s:%s", id, token))
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		PrintLog(CommandError, fmt.Sprintf("GET /state err:%s", err.Error()))
+		return false
+	}
+
+	return res.StatusCode == http.StatusOK
 }
 
 // 鯖にコマンド送信
@@ -292,29 +335,14 @@ func sendCmd(command string) {
 	if !IsServerBooted() {
 		return
 	}
-	rcon, err := rcon.Login(fmt.Sprintf("localhost:%s", RconPort), RconPassword)
-	if err != nil {
-		PrintLog(MinecraftError, err.Error())
-		return
-	}
-	defer rcon.Close()
 
+	escapeString := url.QueryEscape(command)
 	PrintLog(MinecraftInput, command)
-	_, err = rcon.SendCommand(command)
+
+	err := APIPost(ManagerUrl + "/exec?input=" + escapeString)
 	if err != nil {
-		PrintLog(MinecraftError, err.Error())
-		return
+		PrintLog(ManagerError, err.Error())
 	}
-}
-
-func getCommand(cmd string) (command *exec.Cmd) {
-	split := strings.Split(cmd, " ")
-	return exec.Command(split[0], split[1:]...)
-}
-
-func sshCommand(cmd string) (command *exec.Cmd) {
-	cmd = fmt.Sprintf("ssh -v -o LogLevel=quiet -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p %s -i /identity %s@localhost %s", SshPort, SshUser, cmd)
-	return getCommand(cmd)
 }
 
 type OutputType int
