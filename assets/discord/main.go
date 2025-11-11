@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -48,7 +47,7 @@ var (
 )
 
 func main() {
-	b, _ := os.ReadFile(filepath.Join(ConfigPath, "logs.json"))
+	b, _ := os.ReadFile(filepath.Join(ConfigPath))
 	json.Unmarshal(b, &Log)
 	if len(Log) == 0 {
 		panic("log transfer config not found")
@@ -103,15 +102,14 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 	//起動メッセージ
 	PrintLog(ManagerStandard, "discord bot is ready.")
 
-	URL, _ := url.Parse(SendWebhookUrl)
-	webhook, err := discord.Webhook(strings.Split(URL.Path, "/")[3])
+	channel, err := discord.Channel(ReadChannelId)
 	if err != nil {
-		PrintLog(ManagerError, "Webhook parse error/Webhook permission denied?")
+		PrintLog(ManagerError, "Lookup Channel Error: permission denied?")
 		panic(err)
 	}
 
 	// コマンド生成
-	disgord.InteractionCommandCreate(discord, webhook.GuildID, []*discordgo.ApplicationCommand{
+	disgord.InteractionCommandCreate(discord, channel.GuildID, []*discordgo.ApplicationCommand{
 		{
 			Type:                     discordgo.ChatApplicationCommand,
 			Name:                     "start",
