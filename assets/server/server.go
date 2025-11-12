@@ -78,7 +78,7 @@ func serverUp(w http.ResponseWriter, r *http.Request) {
 		scanner := bufio.NewScanner(io.MultiReader(jo, je))
 		for scanner.Scan() {
 			line := scanner.Text()
-			broadcaster.broadcast <- line
+			broadcaster.broadcast <- line + "\n"
 			logger.Debug(line)
 		}
 
