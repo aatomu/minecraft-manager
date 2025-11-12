@@ -32,20 +32,15 @@ func newSession() (id, key string) {
 	rand.Read(keyBuf)
 	key = hex.EncodeToString(keyBuf)
 
-	_, ok := session.s[id]
-	if ok {
-		return
-	}
-
 	session.mu.Lock()
 	defer session.mu.Unlock()
 	session.s[id] = keyBuf
 
 	go func() {
+		time.Sleep(1 * time.Minute)
+
 		session.mu.Lock()
 		defer session.mu.Unlock()
-
-		time.Sleep(1 * time.Minute)
 		delete(session.s, id)
 	}()
 
