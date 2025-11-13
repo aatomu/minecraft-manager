@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -37,19 +39,34 @@ func backup(w http.ResponseWriter, r *http.Request) {
 	currentBackupDir := filepath.Join(backupDestination, backupTime)
 	args = append(args, backupSource, currentBackupDir)
 
+	slog.Info("backup rsync execute start.",
+		slog.String("thread", ThreadExecution),
+		slog.String("timestamp", backupTime),
+	)
+
 	out, err := exec.Command("rsync", args...).CombinedOutput()
 	writeLog(fmt.Sprintf("backup_%s.log", backupTime), out)
 	if err != nil {
-		logger.Error("Backup rsync failed", "error", err, "output", string(out))
+		slog.Error("backup rsync execution failed.",
+			slog.String("thread", ThreadExecution),
+			slog.String("output", strings.ReplaceAll(string(out), "\n", "\\n")),
+			slog.Any("error", err),
+		)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
 		return
 	}
-	logger.Info("Backup rsync succeeded", "output", string(out))
+	slog.Info("backup rsync execution successed.",
+		slog.String("thread", ThreadExecution),
+		slog.String("output", strings.ReplaceAll(string(out), "\n", "\\n")),
+	)
 
 	err = clearOldGeneration()
 	if err != nil {
-		logger.Error("Remove old generation failed", "error", err)
+		slog.Error("Delete old generation failed",
+			slog.String("thread", ThreadExecution),
+			slog.Any("error", err),
+		)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
 		return
@@ -72,9 +89,12 @@ func clearOldGeneration() error {
 	sort.Strings(gen)
 
 	for _, fullPath := range gen[:len(gen)-keepGenerations] {
-		logger.Info("Deleting old generation", "path", fullPath)
+		slog.Info("Delete old generation",
+			slog.String("thread", ThreadExecution),
+			slog.String("path", fullPath),
+		)
 		if err := os.RemoveAll(fullPath); err != nil {
-			logger.Error("Failed to delete old generation", "path", fullPath, "error", err)
+			return err
 		}
 	}
 	return nil
@@ -140,18 +160,30 @@ func restore(w http.ResponseWriter, r *http.Request) {
 		backupSource,
 	}
 
-	logger.Info("Starting restore", "source", restoreSourceDir, "destination", backupSource)
+	slog.Info("restore rsync start.",
+		slog.String("thread", ThreadExecution),
+		slog.String("source", restoreSourceDir),
+		slog.String("destination", backupSource),
+	)
 
 	out, err := exec.Command("rsync", args...).CombinedOutput()
 	writeLog(fmt.Sprintf("restore_%s_by_%s.log", time.Now().Format("20060102_150405"), restoreTime), out)
 	if err != nil {
-		logger.Error("Restore rsync failed", "error", err, "output", string(out))
+		slog.Error("restore rsync execution failed.",
+			slog.String("thread", ThreadExecution),
+			slog.String("output", strings.ReplaceAll(string(out), "\n", "\\n")),
+			slog.Any("error", err),
+		)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(fmt.Sprintf("Restore failed: %s", string(out))))
 		return
 	}
 
-	logger.Info("Restore rsync succeeded", "generation", restoreTime, "output", string(out))
+	slog.Info("backup rsync execution successed.",
+		slog.String("thread", ThreadExecution),
+		slog.String("output", strings.ReplaceAll(string(out), "\n", "\\n")),
+	)
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf("Restore from generation %s completed successfully to %s.\n%s", restoreTime, backupSource, string(out))))
 
@@ -204,15 +236,25 @@ func writeLog(fileName string, s []byte) {
 	filePath := filepath.Join(backupDestination, fileName)
 
 	// ログファイルに書き込み
-	logFile, writeErr := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if writeErr != nil {
-		logger.Error("Failed to open log file", "path", filePath, "error", writeErr)
-	} else {
-		_, writeErr = logFile.Write(s)
-		if writeErr != nil {
-			logger.Error("Failed to write rsync output to log file", "path", filePath, "error", writeErr)
-		}
-		logFile.Close()
+	logFile, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		slog.Error("Failed to open log file",
+			slog.String("thread", ThreadManager),
+			slog.String("path", filePath),
+			slog.Any("error", err),
+		)
+		return
+	}
+	defer logFile.Close()
+
+	_, err = logFile.Write(s)
+	if err != nil {
+		slog.Error("Failed to write log file",
+			slog.String("thread", ThreadManager),
+			slog.String("path", filePath),
+			slog.Any("error", err),
+		)
+		return
 	}
 
 	return

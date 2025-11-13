@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -19,56 +19,80 @@ func tailLog() {
 	var id, token string
 	var err error
 
-	// Loop until a token is successfully obtained
 	for {
-		id, token, err = getToken()
-		if err == nil {
-			break
-		}
-		PrintLog(ManagerError, fmt.Sprintf("Failed to get token: %s. Retrying in 5 seconds...", err.Error()))
-		time.Sleep(5 * time.Second)
-	}
-
-	wsURL := strings.Replace(ManagerUrl, "http", "ws", 1) + "/tail"
-	config, err := websocket.NewConfig(wsURL, "http://localhost")
-	if err != nil {
-		// This is a configuration error, likely not recoverable by retrying.
-		PrintLog(ManagerError, fmt.Sprintf("Failed to create websocket config: %s", err.Error()))
-		return
-	}
-	config.Header.Set("Authorization", fmt.Sprintf("%s:%s", id, token))
-
-	for {
-		PrintLog(ManagerStandard, "Connecting to log stream...")
-		ws, err := websocket.DialConfig(config)
-		if err != nil {
-			PrintLog(ManagerError, fmt.Sprintf("Failed to connect to websocket: %s. Retrying in 5 seconds...", err.Error()))
-			time.Sleep(5 * time.Second)
-			continue // Retry connection
-		}
-
-		PrintLog(ManagerStandard, "Connected to log stream.")
-
-		reader := bufio.NewReader(ws)
 		for {
-			line, err := reader.ReadString('\n')
-			if err != nil {
-				if err != io.EOF {
-					PrintLog(ManagerError, fmt.Sprintf("Websocket read error: %s", err.Error()))
-				}
-				break // Reconnect on any error
+			id, token, err = getToken()
+			if err == nil {
+				break
 			}
-			logAnalyze(line)
+
+			slog.Warn("Failed to get new token. Retry in 5seconds...",
+				slog.String("thread", ThreadMinecraft),
+				slog.Any("error", err),
+			)
+
+			time.Sleep(5 * time.Second)
 		}
 
-		ws.Close()
-		PrintLog(ManagerStandard, "Disconnected from log stream. Reconnecting...")
-		time.Sleep(1 * time.Second) // Shorter delay for reconnection
+		wsURL := strings.Replace(ManagerUrl, "http", "ws", 1) + "/tail"
+		config, err := websocket.NewConfig(wsURL, "http://localhost")
+		if err != nil {
+			slog.Error("Failed to create websocket config",
+				slog.String("thread", ThreadMinecraft),
+				slog.Any("error", err),
+			)
+			return
+		}
+		config.Header.Set("Authorization", fmt.Sprintf("%s:%s", id, token))
+
+		for {
+			slog.Info("Connecting to log stream",
+				slog.String("thread", ThreadMinecraft),
+			)
+
+			ws, err := websocket.DialConfig(config)
+			if err != nil {
+				slog.Warn("Failed to connect to websocket. Retry in 5seconds...",
+					slog.String("thread", ThreadMinecraft),
+					slog.Any("error", err),
+				)
+				time.Sleep(5 * time.Second)
+				continue
+			}
+
+			slog.Info("Connected to log stream.",
+				slog.String("thread", ThreadMinecraft),
+			)
+
+			reader := bufio.NewReader(ws)
+			for {
+				line, err := reader.ReadString('\n')
+				if err != nil {
+					if err != io.EOF {
+						slog.Error("Log stream/websocket failed to read",
+							slog.String("thread", ThreadMinecraft),
+							slog.Any("error", err),
+						)
+					}
+					break // Reconnect on any error
+				}
+				logAnalyze(line)
+			}
+
+			ws.Close()
+			slog.Info("Disconnected from log stream.",
+				slog.String("thread", ThreadMinecraft),
+			)
+
+			time.Sleep(1 * time.Second) // Shorter delay for reconnection
+		}
 	}
 }
 
 func logAnalyze(line string) {
-	PrintLog(MinecraftStandard, line)
+	slog.Info(line,
+		slog.String("thread", ThreadMinecraft),
+	)
 
 	if len(line) > 2000 {
 		// Embed Text Max is 2000 char
@@ -199,7 +223,10 @@ func serverStart() {
 				},
 			},
 		})
-		PrintLog(CommandError, fmt.Sprintf("serverStart() failed\n%s", err.Error()))
+		slog.Error("serverStart() execution failed",
+			slog.String("thread", ThreadCommand),
+			slog.Any("error", err),
+		)
 	}
 }
 
@@ -215,7 +242,10 @@ func serverStop() {
 				},
 			},
 		})
-		PrintLog(CommandError, fmt.Sprintf("serverStop() failed\n%s", err.Error()))
+		slog.Error("serverStop() announce failed",
+			slog.String("thread", ThreadCommand),
+			slog.Any("error", err),
+		)
 		return
 	}
 
@@ -232,7 +262,10 @@ func serverStop() {
 				},
 			},
 		})
-		PrintLog(CommandError, fmt.Sprintf("serverStop() failed\n%s", err.Error()))
+		slog.Error("serverStart() execution failed",
+			slog.String("thread", ThreadCommand),
+			slog.Any("error", err),
+		)
 		return
 	}
 }
@@ -252,7 +285,10 @@ func serverKill() {
 				},
 			},
 		})
-		PrintLog(CommandError, fmt.Sprintf("serverStop() failed\n%s", err.Error()))
+		slog.Error("serverKill() execution failed",
+			slog.String("thread", ThreadCommand),
+			slog.Any("error", err),
+		)
 		return
 	}
 }
@@ -273,7 +309,10 @@ func serverBackup() {
 				},
 			},
 		})
-		PrintLog(CommandError, fmt.Sprintf("backup API failed\n%s", err.Error()))
+		slog.Error("serverBackup() execution failed",
+			slog.String("thread", ThreadCommand),
+			slog.Any("error", err),
+		)
 	}
 	APIPost(ManagerUrl + "/exec?input=" + url.QueryEscape("save-on"))
 }
@@ -290,7 +329,11 @@ func serverRestore(timestamp string) {
 				},
 			},
 		})
-		PrintLog(CommandError, fmt.Sprintf("restore API failed\n%s", err.Error()))
+		slog.Error("serverRestore() execution failed",
+			slog.String("thread", ThreadCommand),
+			slog.String("timestamp", timestamp),
+			slog.Any("error", err),
+		)
 	}
 }
 
@@ -298,7 +341,10 @@ func serverRestore(timestamp string) {
 func IsServerBooted() (isBooted bool) {
 	id, token, err := getToken()
 	if err != nil {
-		PrintLog(CommandError, fmt.Sprintf("getToken() err:%s", err.Error()))
+		slog.Error("Failed to get new token",
+			slog.String("thread", ThreadCommand),
+			slog.Any("error", err),
+		)
 		return false
 	}
 
@@ -308,7 +354,10 @@ func IsServerBooted() (isBooted bool) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		PrintLog(CommandError, fmt.Sprintf("GET /state err:%s", err.Error()))
+		slog.Error("GET /state failed",
+			slog.String("thread", ThreadCommand),
+			slog.Any("error", err),
+		)
 		return false
 	}
 
@@ -322,44 +371,17 @@ func sendCmd(command string) {
 	}
 
 	escapeString := url.QueryEscape(command)
-	PrintLog(MinecraftInput, command)
+	slog.Info("send command",
+		slog.String("thread", ThreadDiscord),
+		slog.String("command", command),
+	)
 
 	err := APIPost(ManagerUrl + "/exec?input=" + escapeString)
 	if err != nil {
-		PrintLog(ManagerError, err.Error())
-	}
-}
-
-type OutputType int
-
-const (
-	// Source: minecraft-manager
-	ManagerStandard OutputType = iota
-	ManagerError
-	// Source: user input/discord interaction
-	CommandStandard
-	CommandError
-	// Source: minecraft latest.log/Rcon
-	MinecraftInput
-	MinecraftStandard
-	MinecraftError
-)
-
-func PrintLog(t OutputType, m string) {
-	switch t {
-	case ManagerStandard:
-		log.Printf("[Manager/OUTPUT]  : %s\n", m)
-	case ManagerError:
-		log.Printf("[Manager/ERROR]   : %s\n", m)
-	case CommandStandard:
-		log.Printf("[Command/OUTPUT]  : %s\n", m)
-	case CommandError:
-		log.Printf("[Command/ERROR]   : %s\n", m)
-	case MinecraftInput:
-		log.Printf("[Minecraft/INPUT] : %s\n", m)
-	case MinecraftStandard:
-		log.Printf("[Minecraft/OUTPUT]: %s\n", m)
-	case MinecraftError:
-		log.Printf("[Minecraft/ERROR] : %s\n", m)
+		slog.Error("send command",
+			slog.String("thread", ThreadDiscord),
+			slog.String("command", command),
+			slog.Any("error", err),
+		)
 	}
 }

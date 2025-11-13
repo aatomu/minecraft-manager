@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -17,17 +18,6 @@ import (
 )
 
 var (
-	// Log
-	logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: true,
-		Level:     slog.LevelDebug,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.TimeKey {
-				a.Value = slog.StringValue(a.Value.Time().Format("2006-01-02T15:04:05.000MST"))
-			}
-			return a
-		},
-	}))
 	// JVM
 	jvm     *os.Process    = nil
 	jvmArgs []string       = os.Args[1:]
@@ -83,6 +73,20 @@ func (b *Broadcaster) Run() {
 	}
 }
 
+const (
+	ThreadJVM       string = "JVM"
+	ThreadManager   string = "Manager"
+	ThreadExecution string = "Execution"
+)
+
+func init() {
+	slog.SetDefault(slog.New(&LogHandler{
+		threadPad: 9,
+		level:     slog.LevelDebug,
+		out:       os.Stdout,
+	}))
+}
+
 func main() {
 	// Broadcast streams
 	broadcaster = NewBroadcaster()
@@ -106,16 +110,21 @@ func main() {
 	go func() {
 		err := server.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			logger.Error("HTTP server failed to start", "error", err)
+			slog.Error("HTTP server has failed to listen port",
+				slog.String("thread", ThreadManager),
+				slog.Any("error", err),
+			)
 		}
 	}()
 
 	// Wait signal
 	<-ctx.Done()
-	logger.Info("Shutting down gracefully, sending signal to JVM...")
 
 	// Cleanup jvm
 	if jvm != nil {
+		slog.Info("Shutting down gracefully, sending signal to JVM...",
+			slog.String("thread", ThreadManager),
+		)
 		// Try normal termination(SIGINT)
 		jvm.Signal(os.Interrupt)
 
@@ -123,7 +132,11 @@ func main() {
 		select {
 		case <-time.After(3 * time.Second):
 			if jvm != nil {
-				logger.Warn("JVM did not terminate gracefully, sending SIGKILL.")
+				slog.Error("JVM did not terminate gracefully, sending SIGKILL.",
+					slog.String("thread", ThreadManager),
+					slog.Any("error", errors.New("JVM signal response has timedout")),
+				)
+
 				jvm.Signal(os.Kill)
 			}
 		}
@@ -133,11 +146,19 @@ func main() {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	slog.Info("HTTP server send shutdown request",
+		slog.String("thread", ThreadManager),
+	)
 	if err := server.Shutdown(timeoutCtx); err != nil {
-		logger.Error("HTTP server forced to shutdown", "error", err)
+		slog.Error("HTTP server failed shutdown.",
+			slog.String("thread", ThreadManager),
+			slog.Any("error", err),
+		)
 	}
 
-	logger.Info("Manager program finished.")
+	slog.Info("Manger processes is exited",
+		slog.String("thread", ThreadManager),
+	)
 }
 
 func getEnv[T float64 | int | bool | string](key string, defaultVal T) T {
@@ -195,7 +216,8 @@ func middleware(next http.Handler, authRequest bool) http.Handler {
 				available, authorize = verify(split[0], split[1])
 			}
 
-			logger.Info("HTTP request received",
+			slog.Info("HTTP request received",
+				slog.String("thread", ThreadManager),
 				slog.String("ip", ip),
 				slog.String("method", method),
 				slog.String("uri", uri),
@@ -211,7 +233,8 @@ func middleware(next http.Handler, authRequest bool) http.Handler {
 			return
 		}
 
-		logger.Info("HTTP request received",
+		slog.Info("HTTP request received",
+			slog.String("thread", ThreadManager),
 			slog.String("ip", ip),
 			slog.String("method", method),
 			slog.String("uri", uri))

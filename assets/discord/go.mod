@@ -1,6 +1,6 @@
-module github.com/aatomu/minecraft-manager
+module github.com/aatomu/minecraft-manager/discord
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/aatomu/aatomlib/disgord v0.0.0-20240219230240-dac1f72ebc71

@@ -6,8 +6,10 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -46,6 +48,20 @@ var (
 	Log []LogConfig
 )
 
+const (
+	ThreadCommand   string = "Command"
+	ThreadDiscord   string = "Discord"
+	ThreadMinecraft string = "Minecraft"
+)
+
+func init() {
+	slog.SetDefault(slog.New(&LogHandler{
+		threadPad: 9,
+		level:     slog.LevelDebug,
+		out:       os.Stdout,
+	}))
+}
+
 func main() {
 	b, _ := os.ReadFile(filepath.Join(ConfigPath))
 	json.Unmarshal(b, &Log)
@@ -53,12 +69,14 @@ func main() {
 		panic("log transfer config not found")
 	}
 
-	PrintLog(ManagerStandard, "=============== [Settings] ===============")
-	PrintLog(ManagerStandard, fmt.Sprintf("Discord Bot Token : %s", Token))
-	PrintLog(ManagerStandard, fmt.Sprintf("Admin Role ID     : %s", AdminRoleId))
-	PrintLog(ManagerStandard, fmt.Sprintf("Read Channel ID   : %s", ReadChannelId))
-	PrintLog(ManagerStandard, fmt.Sprintf("Send Webhook URL  : %s", SendWebhookUrl))
-	fmt.Print(strings.Repeat("\n", 5))
+	slog.Info("Loaded Environment",
+		slog.String("thread", ThreadDiscord),
+		slog.String("BOT_TOKEN", Token),
+		slog.String("ADMIN_ROLE_ID", AdminRoleId),
+		slog.String("READ_CHANNEL_ID", ReadChannelId),
+		slog.String("SEND_WEBHOOK_URL", SendWebhookUrl),
+	)
+	fmt.Print(strings.Repeat("\n", 3))
 
 	// 呼び出し
 	go tailLog()
@@ -75,8 +93,11 @@ func main() {
 		//起動
 		err := discord.Open()
 		if err != nil {
-			PrintLog(ManagerError, "Discord bot authentication failed/Connect to Discord failed")
-			panic(err)
+			slog.Error("Discord bot boot failed",
+				slog.String("thread", ThreadDiscord),
+				slog.Any("err", err),
+			)
+			os.Exit(1)
 		}
 
 		defer func() {
@@ -100,12 +121,17 @@ func main() {
 // Botの起動時に呼び出し
 func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 	//起動メッセージ
-	PrintLog(ManagerStandard, "discord bot is ready.")
+	slog.Info("Discord bot on ready",
+		slog.String("thread", ThreadDiscord),
+	)
 
 	channel, err := discord.Channel(ReadChannelId)
 	if err != nil {
-		PrintLog(ManagerError, "Lookup Channel Error: permission denied?")
-		panic(err)
+		slog.Warn("Read channel luukup failed",
+			slog.Any("thread", ThreadDiscord),
+			slog.Any("error", err),
+		)
+		return
 	}
 
 	// コマンド生成
@@ -210,7 +236,13 @@ func onInteractionCreate(discord *discordgo.Session, iData *discordgo.Interactio
 		return
 	}
 
-	PrintLog(CommandStandard, fmt.Sprintf("User:%s(<@%s>) Operation:\"%s\"", i.User.String(), i.User.ID, i.Command.Name))
+	slog.Info("User interaction called.",
+		slog.String("thread", ThreadDiscord),
+		slog.String("name", i.User.String()),
+		slog.String("mention", fmt.Sprintf("<@%s>", i.User.ID)),
+		slog.String("command", i.Command.Name),
+	)
+
 	// 権限確認
 	ok, err := disgord.HaveRole(discord, iData.GuildID, i.User.ID, AdminRoleId)
 	if !ok || err != nil {
@@ -387,23 +419,25 @@ func getEnv[T float64 | int | bool | string](key string, defaultVal T) T {
 func getToken() (id, token string, err error) {
 	resp, err := http.Get(ManagerUrl + "/new_token")
 	if err != nil {
+		err = fmt.Errorf("GET /new_token failed: %w", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("server error")
+		err = fmt.Errorf("GET /new_token status fail: %s", resp.Status)
 		return
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		err = fmt.Errorf("GET /new_token failed read body: %w", err)
 		return
 	}
 
 	parts := strings.Split(strings.TrimSpace(string(body)), ",")
 	if len(parts) != 2 {
-		err = fmt.Errorf("invalid response format")
+		err = errors.New("GET /new_token invalid response body")
 		return
 	}
 	id = parts[0]

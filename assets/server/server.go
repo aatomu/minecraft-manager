@@ -2,10 +2,13 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 
 	"golang.org/x/net/websocket"
 )
@@ -57,16 +60,26 @@ func serverUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jvm = cmd.Process
-	logger.Info("JVM process started successfully", "pid", jvm.Pid, "args", jvmArgs)
+	slog.Info("JVM process started successfully",
+		slog.String("thread", ThreadExecution),
+		slog.Int("pid", jvm.Pid),
+		slog.String("jvm_args", fmt.Sprintf("[%s]", strings.Join(jvmArgs, " "))),
+	)
+
 	w.WriteHeader(http.StatusOK)
 
 	go func(p *os.Process) {
 		state, err := p.Wait()
 		if err != nil {
-			logger.Error("JVM process waiting error", "error", err)
-		} else {
-			logger.Info("JVM process has finished", "state", state.String())
+			slog.Info("JVM process terminated abnormally",
+				slog.String("thread", ThreadExecution),
+				slog.Any("error", err),
+			)
 		}
+		slog.Info("JVM process has finished",
+			slog.String("thread", ThreadExecution),
+			slog.String("state", state.String()),
+		)
 
 		if jvmIn != nil {
 			jvmIn.Close()
@@ -79,11 +92,16 @@ func serverUp(w http.ResponseWriter, r *http.Request) {
 		for scanner.Scan() {
 			line := scanner.Text()
 			broadcaster.broadcast <- line + "\n"
-			logger.Debug(line)
+			slog.Info(line,
+				slog.String("thread", ThreadJVM),
+			)
 		}
 
 		if err := scanner.Err(); err != nil && err != io.EOF {
-			logger.Error("JVM output read error", "error", err)
+			slog.Error("JVM output read lines failed",
+				slog.String("thread", ThreadExecution),
+				slog.Any("error", err),
+			)
 		}
 	}()
 
@@ -146,13 +164,15 @@ func serverTail(ws *websocket.Conn) {
 	defer func() {
 		broadcaster.unregister <- clientChan
 		ws.Close()
-		logger.Info("Websocket client has closed.")
 	}()
 
 	for message := range clientChan {
 		_, err := ws.Write([]byte(message))
 		if err != nil {
-			logger.Warn("Websocket write error(by client)", "error", err)
+			slog.Warn("Websocket write error",
+				slog.String("thread", ThreadManager),
+				slog.Any("error", err),
+			)
 			return
 		}
 	}
