@@ -26,8 +26,9 @@ func tailLog() {
 				break
 			}
 
-			slog.Warn("Failed to get new token. Retry in 5seconds...",
+			slog.Warn("Failed to get new token",
 				slog.String("thread", ThreadMinecraft),
+				slog.String("retry_in", "5s"),
 				slog.Any("error", err),
 			)
 
@@ -52,8 +53,9 @@ func tailLog() {
 
 			ws, err := websocket.DialConfig(config)
 			if err != nil {
-				slog.Warn("Failed to connect to websocket. Retry in 5seconds...",
+				slog.Warn("Failed to connect to websocket",
 					slog.String("thread", ThreadMinecraft),
+					slog.String("retry_in", "5s"),
 					slog.Any("error", err),
 				)
 				time.Sleep(5 * time.Second)
@@ -223,7 +225,7 @@ func serverStart() {
 				},
 			},
 		})
-		slog.Error("serverStart() execution failed",
+		slog.Error("Failed to start server",
 			slog.String("thread", ThreadCommand),
 			slog.Any("error", err),
 		)
@@ -242,7 +244,7 @@ func serverStop() {
 				},
 			},
 		})
-		slog.Error("serverStop() announce failed",
+		slog.Error("Failed to announce server stop",
 			slog.String("thread", ThreadCommand),
 			slog.Any("error", err),
 		)
@@ -262,7 +264,7 @@ func serverStop() {
 				},
 			},
 		})
-		slog.Error("serverStart() execution failed",
+		slog.Error("Failed to stop server",
 			slog.String("thread", ThreadCommand),
 			slog.Any("error", err),
 		)
@@ -285,7 +287,7 @@ func serverKill() {
 				},
 			},
 		})
-		slog.Error("serverKill() execution failed",
+		slog.Error("Failed to kill server",
 			slog.String("thread", ThreadCommand),
 			slog.Any("error", err),
 		)
@@ -309,7 +311,7 @@ func serverBackup() {
 				},
 			},
 		})
-		slog.Error("serverBackup() execution failed",
+		slog.Error("Failed to backup server",
 			slog.String("thread", ThreadCommand),
 			slog.Any("error", err),
 		)
@@ -329,7 +331,7 @@ func serverRestore(timestamp string) {
 				},
 			},
 		})
-		slog.Error("serverRestore() execution failed",
+		slog.Error("Failed to restore server",
 			slog.String("thread", ThreadCommand),
 			slog.String("timestamp", timestamp),
 			slog.Any("error", err),
@@ -337,7 +339,7 @@ func serverRestore(timestamp string) {
 	}
 }
 
-// 鯖確認
+// IsServerBooted checks if the server is running.
 func IsServerBooted() (isBooted bool) {
 	id, token, err := getToken()
 	if err != nil {
@@ -364,7 +366,7 @@ func IsServerBooted() (isBooted bool) {
 	return res.StatusCode == http.StatusOK
 }
 
-// 鯖にコマンド送信
+// sendCmd sends a command to the server.
 func sendCmd(command string) {
 	if !IsServerBooted() {
 		return
@@ -378,7 +380,7 @@ func sendCmd(command string) {
 
 	err := APIPost(ManagerUrl + "/exec?input=" + escapeString)
 	if err != nil {
-		slog.Error("send command",
+		slog.Error("Failed to send command to server",
 			slog.String("thread", ThreadDiscord),
 			slog.String("command", command),
 			slog.Any("error", err),

@@ -127,7 +127,7 @@ func onReady(discord *discordgo.Session, r *discordgo.Ready) {
 
 	channel, err := discord.Channel(ReadChannelId)
 	if err != nil {
-		slog.Warn("Read channel luukup failed",
+		slog.Warn("Failed to look up read_channel",
 			slog.Any("thread", ThreadDiscord),
 			slog.Any("error", err),
 		)
