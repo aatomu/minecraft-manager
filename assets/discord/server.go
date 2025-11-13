@@ -90,7 +90,7 @@ func tailLog() {
 }
 
 func logAnalyze(line string) {
-	slog.Info(line,
+	slog.Info(strings.TrimSuffix(line, "\n"),
 		slog.String("thread", ThreadMinecraft),
 	)
 
