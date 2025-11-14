@@ -4,7 +4,7 @@ FROM golang:latest AS build
 #go系統
 RUN mkdir /app
 WORKDIR /app
-ADD ./assets/discord/* /app/
+ADD ./* /app/
 RUN CGO_ENABLED=0 go build -o /chat .
 
 # 最小イメージ
