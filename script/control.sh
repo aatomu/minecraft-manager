@@ -178,13 +178,13 @@ container_action() {
 }
 
 # MARK: Main
-readonly SERVER="${1}"
-readonly ENV_FILE="../config/${SERVER}.env"
-readonly SERVICE="${2}"
-readonly ACTION="${3}"
+readonly ARG_SERVER="${1:-}"
+readonly ENV_FILE="../config/${ARG_SERVER}.env"
+readonly ARG_SERVICE="${2:-}"
+readonly ARG_ACTION="${3:-}"
 
 # MARK: > Validation
-if [ -z "${SERVER}" ] || [ -z "${SERVICE}" ] || [ -z "${ACTION}" ]; then
+if [ -z "${ARG_SERVER}" ] || [ -z "${ARG_SERVICE}" ] || [ -z "${ARG_ACTION}" ]; then
   echo "Usage: $0 <server_name> <server|discord|all> <up|down|restart>"
   exit 1
 fi
@@ -198,36 +198,36 @@ fi
 source "${ENV_FILE}"
 
 # MARK: > Check service
-case "${SERVICE}" in
+case "${ARG_SERVICE}" in
 "server" | "discord" | "all") ;;
 *)
-  echo "${LEVEL_ERROR} Invalid service '${SERVICE}'. Use 'server', 'discord', or 'all'."
+  echo "${LEVEL_ERROR} Invalid service '${ARG_SERVICE}'. Use 'server', 'discord', or 'all'."
   exit 1
   ;;
 esac
 
 # MARK: > Check action
-case "${ACTION}" in
+case "${ARG_ACTION}" in
 "up" | "down" | "restart") ;;
 *)
-  echo "${LEVEL_ERROR} Invalid action '${ACTION}'. Use 'up', 'down', or 'restart'."
+  echo "${LEVEL_ERROR} Invalid action '${ARG_ACTION}'. Use 'up', 'down', or 'restart'."
   exit 1
   ;;
 esac
 
 # MARK: > Action to services
 declare ACTION_SERVICES
-case "${SERVICE}" in
+case "${ARG_SERVICE}" in
 server) ACTION_SERVICES="server" ;;
 discord) ACTION_SERVICES="discord" ;;
 all) ACTION_SERVICES="server discord" ;;
 esac
 
 for TARGET_SERVICE in ${ACTION_SERVICES}; do
-  container_action "${SERVER}" "${TARGET_SERVICE}" "${ACTION}"
+  container_action "${ARG_SERVER}" "${TARGET_SERVICE}" "${ARG_ACTION}"
 done
 
 # MARK: Cleanup network
-if [ "${ACTION}" = "down" ] && [ "${SERVICE}" = "all" ]; then
-  manage_network "${SERVER}" "remove"
+if [ "${ARG_ACTION}" = "down" ] && [ "${ARG_SERVICE}" = "all" ]; then
+  manage_network "${ARG_SERVER}" "remove"
 fi
