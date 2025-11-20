@@ -16,78 +16,82 @@ import (
 )
 
 func tailLog() {
-	var id, token string
 	var err error
 
 	for {
+		var ws *websocket.Conn
 		for {
-			id, token, err = getToken()
+			// Get Token
+			var id, token string
+			for {
+				id, token, err = getToken()
+				if err == nil {
+					break
+				}
+
+				slog.Warn("Failed to get new token",
+					slog.String("thread", ThreadMinecraft),
+					slog.String("retry_in", "5s"),
+					slog.Any("error", err),
+				)
+
+				time.Sleep(5 * time.Second)
+			}
+
+			// Connect websocket
+			wsURL := strings.Replace(ManagerUrl, "http", "ws", 1) + "/tail"
+			config, err := websocket.NewConfig(wsURL, "http://localhost")
+			if err != nil {
+				slog.Error("Failed to create websocket config",
+					slog.String("thread", ThreadMinecraft),
+					slog.Any("error", err),
+				)
+				return
+			}
+			config.Header.Set("Authorization", fmt.Sprintf("%s:%s", id, token))
+
+			slog.Info("Connecting to log stream",
+				slog.String("thread", ThreadMinecraft),
+			)
+
+			ws, err = websocket.DialConfig(config)
 			if err == nil {
 				break
 			}
-
-			slog.Warn("Failed to get new token",
+			slog.Warn("Failed to connect to websocket",
 				slog.String("thread", ThreadMinecraft),
 				slog.String("retry_in", "5s"),
 				slog.Any("error", err),
 			)
 
-			time.Sleep(5 * time.Second)
+			continue
 		}
 
-		wsURL := strings.Replace(ManagerUrl, "http", "ws", 1) + "/tail"
-		config, err := websocket.NewConfig(wsURL, "http://localhost")
-		if err != nil {
-			slog.Error("Failed to create websocket config",
-				slog.String("thread", ThreadMinecraft),
-				slog.Any("error", err),
-			)
-			return
-		}
-		config.Header.Set("Authorization", fmt.Sprintf("%s:%s", id, token))
+		slog.Info("Connected to log stream.",
+			slog.String("thread", ThreadMinecraft),
+		)
 
+		reader := bufio.NewReader(ws)
 		for {
-			slog.Info("Connecting to log stream",
-				slog.String("thread", ThreadMinecraft),
-			)
-
-			ws, err := websocket.DialConfig(config)
+			line, err := reader.ReadString('\n')
 			if err != nil {
-				slog.Warn("Failed to connect to websocket",
-					slog.String("thread", ThreadMinecraft),
-					slog.String("retry_in", "5s"),
-					slog.Any("error", err),
-				)
-				time.Sleep(5 * time.Second)
-				continue
-			}
-
-			slog.Info("Connected to log stream.",
-				slog.String("thread", ThreadMinecraft),
-			)
-
-			reader := bufio.NewReader(ws)
-			for {
-				line, err := reader.ReadString('\n')
-				if err != nil {
-					if err != io.EOF {
-						slog.Error("Log stream/websocket failed to read",
-							slog.String("thread", ThreadMinecraft),
-							slog.Any("error", err),
-						)
-					}
-					break // Reconnect on any error
+				if err != io.EOF {
+					slog.Error("Log stream/websocket failed to read",
+						slog.String("thread", ThreadMinecraft),
+						slog.Any("error", err),
+					)
 				}
-				logAnalyze(line)
+				break // Reconnect on any error
 			}
-
-			ws.Close()
-			slog.Info("Disconnected from log stream.",
-				slog.String("thread", ThreadMinecraft),
-			)
-
-			time.Sleep(1 * time.Second) // Shorter delay for reconnection
+			logAnalyze(line)
 		}
+
+		ws.Close()
+		slog.Info("Disconnected from log stream.",
+			slog.String("thread", ThreadMinecraft),
+		)
+
+		time.Sleep(1 * time.Second) // Shorter delay for reconnection
 	}
 }
 
