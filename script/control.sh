@@ -77,7 +77,7 @@ run_container() {
 
     # ポートマッピング
     local PORTS="-p ${SERVER_PORT_MAP}"
-    if [ -n "${RESTAPI_PORT}" ]; then
+    if [ -n "${RESTAPI_PORT:-}" ]; then
       PORTS="${PORTS} -p ${RESTAPI_PORT}:80"
     fi
 
@@ -92,7 +92,7 @@ run_container() {
       -v "${SERVER_BACKUP}:/mnt/backup:rw" \
       -e "PASSWORD=${API_PASSWORD}" \
       "${SERVER_IMAGE}" \
-      ${SERVER_COMMAND}
+      ${SERVER_ARGUMENTS}
     ;;
 
   # MARK: >> discord
@@ -113,6 +113,7 @@ run_container() {
       -e "ADMIN_ROLE_ID=${ADMIN_ROLE_ID}" \
       -e "READ_CHANNEL_ID=${READ_CHANNEL_ID}" \
       -e "SEND_WEBHOOK_URL=${SEND_WEBHOOK_URL}" \
+      -e "MANAGER_URL=http://${SERVER}.server" \
       "${DISCORD_IMAGE}"
     ;;
   esac
