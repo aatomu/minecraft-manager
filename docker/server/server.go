@@ -39,7 +39,8 @@ func serverUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd := exec.Command("java", jvmArgs...)
+	command := append([]string{"-c"}, serverArguments...)
+	cmd := exec.Command("/bin/sh", command...)
 
 	var err error
 	jvmIn, err = cmd.StdinPipe()
@@ -63,7 +64,7 @@ func serverUp(w http.ResponseWriter, r *http.Request) {
 	slog.Info("JVM process started successfully",
 		slog.String("thread", ThreadExecution),
 		slog.Int("pid", jvm.Pid),
-		slog.String("jvm_args", fmt.Sprintf("[%s]", strings.Join(jvmArgs, " "))),
+		slog.String("jvm_args", fmt.Sprintf("[%s]", strings.Join(serverArguments, " "))),
 	)
 
 	w.WriteHeader(http.StatusOK)

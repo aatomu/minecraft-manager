@@ -19,9 +19,9 @@ import (
 
 var (
 	// JVM
-	jvm     *os.Process    = nil
-	jvmArgs []string       = os.Args[1:]
-	jvmIn   io.WriteCloser = nil
+	jvm             *os.Process    = nil
+	serverArguments []string       = os.Args[1:]
+	jvmIn           io.WriteCloser = nil
 	// Broadcast
 	clientChannelBufferSize    = getEnv("CLIENT_BUFFER_SIZE", 20)
 	broadcastChannelBufferSize = getEnv("BROADCAST_BUFFER_SIZE", 50)

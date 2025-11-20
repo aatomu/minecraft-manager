@@ -38,7 +38,7 @@ ENV TZ=Asia/Tokyo
 # 2. add group
 # 3. add user
 RUN apk update \
-  && apk add --no-cache tzdata shadow rsync \
+  && apk add --no-cache tzdata shadow rsync bash \
   && groupadd --force -g ${GID} ${GROUP_NAME} \
   && useradd -o -M -u ${UID} -g ${GID} ${USER_NAME} \
   && mkdir /mnt/resource \
