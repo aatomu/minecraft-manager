@@ -5,9 +5,10 @@ cd "$(dirname "$0")"
 
 # MARK: Constants
 readonly DISCORD_IMAGE="mc_chat:develop"
-declare -r UID GID
-UID="$(id -u)"
-GID="$(id -g)"
+LOCAL_UID="$(id -u)"
+readonly LOCAL_UID
+LOCAL_GID="$(id -g)"
+readonly LOCAL_GID
 # MARK: > Log Header
 readonly LEVEL_INFO="[INFO ]:"
 readonly LEVEL_WARN="[WARN ]:"
@@ -85,7 +86,7 @@ run_container() {
       --name "${CONTAINER_NAME}" \
       --network "${NETWORK_NAME}" \
       --restart unless-stopped \
-      --user "${UID}:${GID}" \
+      --user "${LOCAL_UID}:${LOCAL_GID}" \
       ${PORTS} \
       -v "${SERVER_DATA}:/mnt/resource:rw" \
       -v "${SERVER_BACKUP}:/mnt/backup:rw" \
@@ -105,7 +106,7 @@ run_container() {
       --name "${CONTAINER_NAME}" \
       --network "${NETWORK_NAME}" \
       --restart unless-stopped \
-      --user "${UID}:${GID}" \
+      --user "${LOCAL_UID}:${LOCAL_GID}" \
       -v "${LOG_SETTING}:/mnt/logs.json" \
       -e "PASSWORD=${API_PASSWORD}" \
       -e "BOT_TOKEN=${BOT_TOKEN}" \
