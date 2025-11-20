@@ -18,7 +18,7 @@ build_server() {
   readonly JAVA_IMAGE_PREFIX
 
   local JAVA_VERSION="${1:-}"
-  local JAVA_IMAGE="${JAVA_IMAGE_PREFIX}:${JAVA_VERSION}"
+  local JAVA_IMAGE="${JAVA_IMAGE_PREFIX}:dev-${JAVA_VERSION}"
 
   if [ -z "${JAVA_VERSION}" ]; then
     echo "Error: Java version not specified." >&2
