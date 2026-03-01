@@ -30,6 +30,7 @@ RUN mkdir /MC \
   tzdata \
   locales \
   language-pack-ja-base language-pack-ja \
+  wget curl ca-certificates \
   && apt-get -y clean \
   && rm -rf /var/lib/apt/lists/* \
   && groupadd --force -g $GID $GROUP_NAME \
