@@ -56,7 +56,8 @@
   {
     "comment": "Chat",
     "regexp": [
-      "\\[.+?\\] \\[Server thread/INFO\\].*?: <(.+?)> (.*)"
+      "\\[.+?\\] \\[Server thread/INFO\\].*?: <(.+?)> (.*)",
+      "\\[.+?\\] \\[Async Chat Thread - .+?\\].*?: <(.+?)> (.*)"
     ],
     "action": "message"
   },
